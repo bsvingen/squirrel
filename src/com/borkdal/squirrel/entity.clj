@@ -1,6 +1,6 @@
 (ns com.borkdal.squirrel.entity
   (:require [clojure.string :as string]
-            [camel-snake-kebab.core :as csk]
+            [org.tobereplaced.lettercase :as lc]
             [com.borkdal.squirrel.definitions :as defs]
             [com.borkdal.clojure.utils :as utils]))
 
@@ -24,12 +24,12 @@
 
 (defn- get-name-from-entity
   [entity]
-  (csk/->kebab-case (str entity)))
+  (lc/lower-hyphen (str entity)))
 
 (defn- get-entity-from-keyword
   [keyword]
   (symbol
-   (csk/->CamelCase
+   (lc/capitalized-name
     (name keyword))))
 
 (defn- get-type-check-function
