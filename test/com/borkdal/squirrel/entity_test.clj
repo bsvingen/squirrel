@@ -9,6 +9,7 @@
                    get-names
                    get-name-defaults
                    get-name-from-entity
+                   get-entity-from-keyword
                    get-type-check-function
                    get-make-pre-assertion
                    get-update-pre-assertions
@@ -51,12 +52,20 @@
          (or (nil? ~'sub-2) (~#'string? ~'sub-2)))))
 
 (facts "Checking name conversions"
-  (fact "single-word-type"
-    (get-name-from-entity 'Sub1) => "sub-1")
-  (fact "double-word-type"
-    (get-name-from-entity 'SubSub) => "sub-sub")
-  (fact "triple-word-type"
-    (get-name-from-entity 'SubSubSubber) => "sub-sub-subber")
+  (facts "get-name-from-entity"
+    (fact "single-word-type"
+      (get-name-from-entity 'Sub1) => "sub-1")
+    (fact "double-word-type"
+      (get-name-from-entity 'SubSub) => "sub-sub")
+    (fact "triple-word-type"
+      (get-name-from-entity 'SubSubSubber) => "sub-sub-subber"))
+  (facts "get-entity-from-keyword"
+    (fact "single-word-type"
+      (get-entity-from-keyword :sub-1) => 'Sub1)
+    (fact "double-word-type"
+      (get-entity-from-keyword :sub-sub) => 'SubSub)
+    (fact "triple-word-type"
+      (get-entity-from-keyword :sub-sub-subber) => 'SubSubSubber))
   (fact "get-type-check-function entity"
     (get-type-check-function 'TableName) => 'table-name?)
   (fact "get-type-check-function string"
