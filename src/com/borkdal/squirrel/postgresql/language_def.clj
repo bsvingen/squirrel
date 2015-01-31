@@ -213,6 +213,9 @@
 (entity/def-entity [cross-join CrossJoin]
   "cross join")
 
+(entity/def-entity [cross-join Natural]
+  "natural")
+
 (entity/def-parent-entity [JoinType [InnerJoin
                                      LeftJoin
                                      RightJoin
@@ -220,6 +223,7 @@
                                      CrossJoin]])
 
 (entity/def-entity [join Join [[:single JoinType join-type]
+                               [:single Natural natural]
                                [:ordered FromItem from-items]
                                [:single Condition join-condition]
                                [:ordered ColumnName join-columns]]]
@@ -233,19 +237,20 @@
        (utils/spaced-str
         (defs/compile-sql join-type)
         (defs/compile-sql second-from-item))
-       (if (seq join-condition)
-         (utils/spaced-str
-          (defs/compile-sql join-type)
-          (defs/compile-sql second-from-item)
-          "on"
-          (defs/compile-sql join-condition))
-         (utils/spaced-str
-          (defs/compile-sql join-type)
-          (defs/compile-sql second-from-item)
-          "using"
-          (str "("
-               (string/join ", " (map defs/compile-sql join-columns))
-               ")")))))))
+       (utils/spaced-str
+        (when-let [natural (:natural join)]
+          (defs/compile-sql natural))
+        (defs/compile-sql join-type)
+        (defs/compile-sql second-from-item)
+        (cond
+          (seq join-condition) (utils/spaced-str
+                                "on"
+                                (defs/compile-sql join-condition))
+          (seq join-columns) (utils/spaced-str
+                              "using"
+                              (str "("
+                                   (string/join ", " (map defs/compile-sql join-columns))
+                                   ")"))))))))
 
 (entity/def-parent-entity [FromItem [TableName
                                      TableExpression
