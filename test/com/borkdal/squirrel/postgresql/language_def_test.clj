@@ -190,6 +190,12 @@
           (or-condition (compare-greater-equals "x1" "7")
                         (compare-less "x2" "11")))
     => (sql "abc join def on ((x1 >= 7) or (x2 < 11))"))
+  (fact "natural join"
+    (join (inner-join)
+          (natural)
+          (table-expression (table-name "abc"))
+          (table-expression (table-name "def")))
+    => (sql "abc natural join def"))
   (fact "full join with columns"
     (join (full-join)
           (table-expression (table-name "abc"))
@@ -357,16 +363,40 @@
                                               (data-type "timestamp"))))
     => (sql "select * from abc as def (c1, c2, c3),"
             " get_values(7, 11) as (what varchar(100), how_much int, when timestamp)"))
-  (fact "join"
-    (select (column "x1"
-                    (column-alias "xx1"))
-            (column "x2")
+  (fact "join with condition"
+    (select (column "favorite_books.employee_id"
+                    (column-alias "employee_id"))
+            (column "authors_and_titles")
+            (column "books")
             (join (inner-join)
-                  (table-expression (table-name "abc"))
-                  (table-expression (table-name "def"))
-                  (or-condition (compare-greater-equals "x1" "7")
-                                (compare-less "x2" "11"))))
-    => (sql "select x1 as xx1, x2 from abc join def on ((x1 >= 7) or (x2 < 11))"))
+                  (table-expression (table-name "favorite_authors"))
+                  (table-expression (table-name "favorite_books"))
+                  (compare-equals "favorite_authors.employee_id" "favorite_books.employee_id")))
+    => (sql "select favorite_books.employee_id as employee_id, authors_and_titles, books"
+            " from favorite_authors join favorite_books"
+            " on (favorite_authors.employee_id = favorite_books.employee_id)"))
+  (fact "join with columns"
+    (select (column "favorite_books.employee_id"
+                    (column-alias "employee_id"))
+            (column "authors_and_titles")
+            (column "books")
+            (join (inner-join)
+                  (table-expression (table-name "favorite_authors"))
+                  (table-expression (table-name "favorite_books"))
+                  (column-name "employee_id")))
+    => (sql "select favorite_books.employee_id as employee_id, authors_and_titles, books"
+            " from favorite_authors join favorite_books using (employee_id)"))
+  (fact "natural join"
+    (select (column "favorite_books.employee_id"
+                    (column-alias "employee_id"))
+            (column "authors_and_titles")
+            (column "books")
+            (join (inner-join)
+                  (natural)
+                  (table-expression (table-name "favorite_authors"))
+                  (table-expression (table-name "favorite_books"))))
+    => (sql "select favorite_books.employee_id as employee_id, authors_and_titles, books"
+            " from favorite_authors natural join favorite_books"))
   (fact "group by"
     (select (column "c1")
             (column "count(*)")
