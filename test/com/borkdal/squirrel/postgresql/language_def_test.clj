@@ -241,6 +241,11 @@
 (fact "group-by element"
   (group "x*2") => (sql "x*2"))
 
+(fact "having element"
+  (having
+   (compare-equals "z" "9"))
+  => (sql "(z = 9)"))
+
 (facts "order by"
   (fact "just desc"
     (desc) => (sql "desc"))
@@ -417,14 +422,40 @@
             (where (compare-greater "c2" "100"))
             (group "c1"))
     => (sql "select c1, count(*) from abc where (c2 > 100) group by c1"))
+  (fact "group by, having"
+    (select (column "c1")
+            (column "count(*)")
+            (table-expression (table-name "abc"))
+            (where (compare-greater "c2" "100"))
+            (group "c1")
+            (having (compare-greater "c1" "10"))            )
+    => (sql "select c1, count(*) from abc where (c2 > 100) group by c1 having (c1 > 10)"))
   (fact "group by, order by"
     (select (column "c1")
+            (column "c2")
             (column "count(*)"
                     (column-alias "c"))
             (table-expression (table-name "abc"))
             (where (compare-greater "c2" "100"))
             (group "c1")
+            (group "c2")
             (order-by "c"
                       (using "f")))
-    => (sql "select c1, count(*) as c from abc where (c2 > 100) group by c1 order by c using f")))
+    => (sql "select c1, c2, count(*) as c from abc where (c2 > 100)"
+            " group by c1, c2 order by c using f"))
+  (fact "group by, having, order by"
+    (select (column "c1")
+            (column "c2")
+            (column "count(*)"
+                    (column-alias "c"))
+            (table-expression (table-name "abc"))
+            (where (compare-greater "c2" "100"))
+            (group "c1")
+            (group "c2")
+            (having (compare-greater "c1" "0"))
+            (having (compare-greater "c2" "0"))
+            (order-by "c"
+                      (using "f")))
+    => (sql "select c1, c2, count(*) as c from abc where (c2 > 100)"
+            " group by c1, c2 having (c1 > 0), (c2 > 0) order by c using f")))
 

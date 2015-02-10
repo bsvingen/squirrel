@@ -279,6 +279,9 @@
 (entity/def-entity [group Group [[:single Expression expression]]]
   (defs/compile-sql (:expression group)))
 
+(entity/def-entity [having Having [[:single Condition condition]]]
+  (defs/compile-sql (:condition having)))
+
 (entity/def-entity [desc Desc]
   "desc")
 
@@ -318,6 +321,7 @@
                                    [:ordered FromItem from-items]
                                    [:unordered Where wheres]
                                    [:ordered Group groups]
+                                   [:unordered Having havings]
                                    [:ordered OrderBy order-by]]]
   (utils/spaced-str
    (utils/when-seq-let [with-queries (:with-queries select)]
@@ -347,6 +351,10 @@
      (utils/spaced-str
       "group by"
       (string/join ", " (map defs/compile-sql groups))))
+   (utils/when-seq-let [havings (:havings select)]
+     (utils/spaced-str
+      "having"
+      (string/join ", " (map defs/compile-sql havings))))
    (utils/when-seq-let [order-by (:order-by select)]
      (utils/spaced-str
       "order by"
