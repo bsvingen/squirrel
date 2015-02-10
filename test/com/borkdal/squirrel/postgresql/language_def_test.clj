@@ -250,7 +250,20 @@
   (fact "with desc"
     (order-by "c"
               (desc))
-    => (sql "c desc")))
+    => (sql "c desc"))
+  (fact "using"
+    (order-by "c"
+              (using "<"))
+    => (sql "c using <"))
+  (fact "nulls"
+    (order-by "c"
+              (nulls-first))
+    => (sql "c nulls first"))
+  (fact "using with nulls"
+    (order-by "c"
+              (using "<")
+              (nulls-last))
+    => (sql "c using < nulls last")))
 
 (facts "full select"
   (fact "basic"
@@ -411,6 +424,7 @@
             (table-expression (table-name "abc"))
             (where (compare-greater "c2" "100"))
             (group "c1")
-            (order-by "c"))
-    => (sql "select c1, count(*) as c from abc where (c2 > 100) group by c1 order by c")))
+            (order-by "c"
+                      (using "f")))
+    => (sql "select c1, count(*) as c from abc where (c2 > 100) group by c1 order by c using f")))
 

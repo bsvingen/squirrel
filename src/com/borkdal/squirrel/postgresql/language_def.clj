@@ -282,12 +282,34 @@
 (entity/def-entity [desc Desc]
   "desc")
 
+(entity/def-entity [using Using [[:single String operator]]]
+  (utils/spaced-str
+   "using"
+   (defs/compile-sql (:operator using))))
+
+(entity/def-entity [nulls-first NullsFirst]
+  "nulls first")
+
+(entity/def-entity [nulls-last NullsLast]
+  "nulls last")
+
 (entity/def-entity [order-by OrderBy [[:single Expression expression]
-                                      [:single Desc desc]]]
+                                      [:single Desc desc]
+                                      [:single Using using]
+                                      [:single NullsFirst nulls-first]
+                                      [:single NullsLast nulls-last]]]
   (utils/spaced-str
    (defs/compile-sql (:expression order-by))
-   (when-let [desc (:desc order-by)]
-     (defs/compile-sql desc))))
+   (let [desc (:desc order-by)
+         using (:using order-by)]
+     (cond
+       desc (defs/compile-sql desc)
+       using (defs/compile-sql using)))
+   (let [nulls-first (:nulls-first order-by)
+         nulls-last (:nulls-last order-by)]
+     (cond
+       nulls-first (defs/compile-sql nulls-first)
+       nulls-last (defs/compile-sql nulls-last)))))
 
 (entity/def-entity [select Select [[:single RecursiveWith recursive-with]
                                    [:single Star star]
