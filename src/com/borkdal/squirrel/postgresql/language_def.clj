@@ -4,7 +4,8 @@
             [com.borkdal.clojure.utils :as utils]
             [com.borkdal.squirrel.entity :as entity]))
 
-(entity/def-entity [only Only])
+(entity/def-entity [only Only]
+  "only")
 
 (entity/def-string-entity [name TableName])
 (entity/def-string-entity [alias NameAlias])
@@ -15,7 +16,8 @@
                                                 [:single NameAlias alias]
                                                 [:ordered ColumnAlias column-aliases]]]
   (utils/spaced-str
-   (when (:only expression) "only")
+   (when-let [only (:only expression)]
+     (defs/compile-sql only))
    (defs/compile-sql (:name expression))
    (when-let [alias (:alias expression)]
      (utils/spaced-str
@@ -31,14 +33,16 @@
 (entity/declare-entity FromItem)
 (entity/declare-entity Select)
 
-(entity/def-entity [lateral Lateral])
+(entity/def-entity [lateral Lateral]
+  "lateral")
 
 (entity/def-entity [sub-select SubSelect [[:single Lateral lateral]
                                           [:single Select select]
                                           [:single NameAlias alias]
                                           [:ordered ColumnAlias column-aliases]]]
   (utils/spaced-str
-   (when (:lateral sub-select) "lateral")
+   (when-let [lateral (:lateral sub-select)]
+     (defs/compile-sql lateral))
    (str "("
         (defs/compile-sql (:select sub-select))
         ")")
@@ -82,7 +86,8 @@
                        (map defs/compile-sql column-aliases))
           ")"))))
 
-(entity/def-entity [recursive-with RecursiveWith])
+(entity/def-entity [recursive-with RecursiveWith]
+  "recursive")
 
 (entity/def-entity [column-definition ColumnDefinition [[:single ColumnName column-name]
                                                         [:single DataType data-type]]]
@@ -450,7 +455,8 @@
    (utils/when-seq-let [with-queries (:with-queries select)]
      (utils/spaced-str
       "with"
-      (when (:recursive-with select) "recursive")
+      (when-let [recursive (:recursive-with select)]
+        (defs/compile-sql recursive))
       (string/join ", "
                    (map defs/compile-sql with-queries))))
    "select"
