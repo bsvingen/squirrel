@@ -1,4 +1,4 @@
-(defproject com.borkdal/squirrel "0.1.3"
+(defproject com.borkdal/squirrel "0.1.4-SNAPSHOT"
   :description "SQuirreL SQL library"
   :url "https://github.com/bsvingen/squirrel"
   :license {:name "Apache License 2.0"
