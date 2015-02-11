@@ -246,6 +246,98 @@
    (compare-equals "z" "9"))
   => (sql "(z = 9)"))
 
+(facts "window"
+  (fact "window name"
+    (window-name "abc") => (sql "abc"))
+  (fact "partition"
+    (window-partition "x*2") => (sql "x*2"))
+  (fact "value preciding"
+    (value-preceding "7") => (sql "7 preceding"))
+  (fact "value preciding"
+    (value-following "7") => (sql "7 following"))
+  (facts "frame clause"
+    (fact "just start"
+      (frame-clause
+       (window-range)
+       (unbounded-following))
+      => (sql "range unbounded following"))
+    (fact "just start with value"
+      (frame-clause
+       (window-rows)
+       (value-preceding "7"))
+      => (sql "rows 7 preceding"))
+    (fact "start and end"
+      (frame-clause
+       (window-range)
+       (unbounded-preceding)
+       (unbounded-following))
+      => (sql "range between unbounded preceding and unbounded following"))
+    (fact "start and end with value"
+      (frame-clause
+       (window-rows)
+       (value-preceding "7")
+       (current-row))
+      => (sql "rows between 7 preceding and current row")))
+  (facts "window definitions"
+    (fact "simple"
+      (window-definition
+       (window-partition "x*2")
+       (order-by "x"))
+      => (sql "partition by x*2 order by x"))
+    (fact "with name"
+      (window-definition
+       (window-name "other")
+       (window-partition "x*2")
+       (order-by "x"))
+      => (sql "other partition by x*2 order by x"))
+    (fact "multi-term"
+      (window-definition
+       (window-partition "x*2")
+       (window-partition "y")
+       (order-by "x"
+                 (using "<")
+                 (nulls-last))
+       (order-by "y"))
+      => (sql "partition by x*2, y order by x using < nulls last, y"))
+    (fact "with single frame clause"
+      (window-definition
+       (window-partition "x*2")
+       (order-by "x")
+       (frame-clause
+        (window-rows)
+        (value-preceding "7")))
+      => (sql "partition by x*2 order by x rows 7 preceding"))
+    (fact "with between"
+      (window-definition
+       (window-partition "x*2")
+       (window-partition "y")
+       (order-by "x"
+                 (using "<")
+                 (nulls-last))
+       (order-by "y")
+       (frame-clause
+        (window-rows)
+        (value-preceding "7")
+        (current-row)))
+      => (sql "partition by x*2, y order by x using < nulls last,"
+              " y rows between 7 preceding and current row")))
+  (fact "window"
+    (window
+     (window-name "w")
+     (window-definition
+      (window-partition "x*2")
+      (window-partition "y")
+      (order-by "x"
+                (using "<")
+                (nulls-last))
+      (order-by "y")
+      (frame-clause
+       (window-rows)
+       (value-preceding "7")
+       (current-row))))
+    => (sql "w as (partition by x*2, y order by x using < nulls last,"
+            " y rows between 7 preceding and current row)")))
+
 (facts "order by"
   (fact "just desc"
     (desc) => (sql "desc"))
@@ -457,5 +549,43 @@
             (order-by "c"
                       (using "f")))
     => (sql "select c1, c2, count(*) as c from abc where (c2 > 100)"
-            " group by c1, c2 having (c1 > 0), (c2 > 0) order by c using f")))
+            " group by c1, c2 having (c1 > 0), (c2 > 0) order by c using f"))
+  (fact "group by, having, window, order by"
+    (select (column "c1")
+            (column "c2")
+            (column "count(*)"
+                    (column-alias "c"))
+            (table-expression (table-name "abc"))
+            (where (compare-greater "c2" "100"))
+            (group "c1")
+            (group "c2")
+            (having (compare-greater "c1" "0"))
+            (having (compare-greater "c2" "0"))
+            (window
+             (window-name "w1")
+             (window-definition
+              (window-partition "x*2")
+              (order-by "x")))
+            (window
+             (window-name "w")
+             (window-definition
+              (window-partition "x*2")
+              (window-partition "y")
+              (order-by "x"
+                        (using "<")
+                        (nulls-last))
+              (order-by "y")
+              (frame-clause
+               (window-rows)
+               (value-preceding "7")
+               (current-row))))
+            (order-by "c"
+                      (using "f")))
+    => (sql "select c1, c2, count(*) as c from abc where (c2 > 100)"
+            " group by c1, c2 having (c1 > 0), (c2 > 0)"
+            " window w1 as (partition by x*2 order by x)"
+            ", w as"
+            " (partition by x*2, y order by x using < nulls last,"
+            " y rows between 7 preceding and current row)"
+            " order by c using f")))
 

@@ -314,6 +314,88 @@
        nulls-first (defs/compile-sql nulls-first)
        nulls-last (defs/compile-sql nulls-last)))))
 
+(entity/def-string-entity [window-name WindowName])
+
+(entity/def-entity [window-partition WindowPartition [[:single Expression expression]]]
+  (defs/compile-sql (:expression window-partition)))
+
+(entity/def-entity [range WindowRange]
+  "range")
+
+(entity/def-entity [rows WindowRows]
+  "rows")
+
+(entity/def-entity [unbounded-preceding UnboundedPreceding]
+  "unbounded preceding")
+
+(entity/def-entity [value-preceding ValuePreceding [[:single String value]]]
+  (utils/spaced-str
+   (defs/compile-sql (:value value-preceding))
+   "preceding"))
+
+(entity/def-entity [current-row CurrentRow]
+  "current row")
+
+(entity/def-entity [value-following ValueFollowing [[:single String value]]]
+  (utils/spaced-str
+   (defs/compile-sql (:value value-following))
+   "following"))
+
+(entity/def-entity [unbounded-following UnboundedFollowing]
+  "unbounded following")
+
+(entity/def-parent-entity [WindowFrame [UnboundedPreceding
+                                        ValuePreceding
+                                        CurrentRow
+                                        ValueFollowing
+                                        UnboundedFollowing]])
+
+
+(entity/def-entity [clause FrameClause [[:single WindowRange range]
+                                        [:single WindowRows rows]
+                                        [:ordered WindowFrame frames]]]
+  (utils/spaced-str
+   (let [range (:range clause)
+         rows (:rows clause)]
+     (cond
+       range (defs/compile-sql range)
+       rows (defs/compile-sql rows)))
+   (let [frames (:frames clause)]
+     (if (> (count frames) 1)
+       (utils/spaced-str
+        "between"
+        (defs/compile-sql (first frames))
+        "and"
+        (defs/compile-sql (second frames)))
+       (defs/compile-sql (first frames))))))
+
+(entity/def-entity [definition WindowDefinition [[:single WindowName name]
+                                                 [:ordered WindowPartition partitions]
+                                                 [:ordered OrderBy order-by]
+                                                 [:single FrameClause frame-clause]]]
+  (utils/spaced-str
+   (when-let [name (:name definition)]
+     (defs/compile-sql name))
+   (utils/when-seq-let [partitions (:partitions definition)]
+     (utils/spaced-str
+      "partition by"
+      (string/join ", " (map defs/compile-sql partitions))))
+   (utils/when-seq-let [order-by (:order-by definition)]
+     (utils/spaced-str
+      "order by"
+      (string/join ", " (map defs/compile-sql order-by))))
+   (when-let [frame-clause (:frame-clause definition)]
+     (defs/compile-sql frame-clause))))
+
+(entity/def-entity [window Window [[:single WindowName name]
+                                   [:single WindowDefinition definition]]]
+  (utils/spaced-str
+   (defs/compile-sql (:name window))
+   "as"
+   (str "("
+        (defs/compile-sql (:definition window))
+        ")")))
+
 (entity/def-entity [select Select [[:single RecursiveWith recursive-with]
                                    [:single Star star]
                                    [:ordered Column columns]
@@ -322,6 +404,7 @@
                                    [:unordered Where wheres]
                                    [:ordered Group groups]
                                    [:unordered Having havings]
+                                   [:ordered Window windows]
                                    [:ordered OrderBy order-by]]]
   (utils/spaced-str
    (utils/when-seq-let [with-queries (:with-queries select)]
@@ -355,6 +438,10 @@
      (utils/spaced-str
       "having"
       (string/join ", " (map defs/compile-sql havings))))
+   (utils/when-seq-let [windows (:windows select)]
+     (utils/spaced-str
+      "window"
+      (string/join ", " (map defs/compile-sql windows))))
    (utils/when-seq-let [order-by (:order-by select)]
      (utils/spaced-str
       "order by"
