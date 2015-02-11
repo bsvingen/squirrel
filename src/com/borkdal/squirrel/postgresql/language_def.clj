@@ -419,6 +419,20 @@
                                          Intersect
                                          Except]])
 
+(entity/def-entity [limit Limit [[:single Expression count]
+                                 [:single All all]]]
+  (utils/spaced-str
+   "limit"
+   (defs/compile-sql
+     (if-let [count (:count limit)]
+       count
+       (:all limit)))))
+
+(entity/def-entity [offset Offset [[:single Expression start]]]
+  (utils/spaced-str
+   "offset"
+   (defs/compile-sql (:start offset))))
+
 (entity/def-entity [select Select [[:single RecursiveWith recursive-with]
                                    [:single Star star]
                                    [:ordered Column columns]
@@ -429,7 +443,9 @@
                                    [:unordered Having havings]
                                    [:ordered Window windows]
                                    [:single SetOperation set-operation]
-                                   [:ordered OrderBy order-by]]]
+                                   [:ordered OrderBy order-by]
+                                   [:single Limit limit]
+                                   [:single Offset offset]]]
   (utils/spaced-str
    (utils/when-seq-let [with-queries (:with-queries select)]
      (utils/spaced-str
@@ -471,5 +487,9 @@
    (utils/when-seq-let [order-by (:order-by select)]
      (utils/spaced-str
       "order by"
-      (string/join ", " (map defs/compile-sql order-by))))))
+      (string/join ", " (map defs/compile-sql order-by))))
+   (when-let [limit (:limit select)]
+     (defs/compile-sql limit))
+   (when-let [offset (:offset select)]
+     (defs/compile-sql offset))))
 

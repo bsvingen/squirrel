@@ -362,6 +362,17 @@
               (nulls-last))
     => (sql "c using < nulls last")))
 
+(facts "limit, offset"
+  (fact "limit, count"
+    (limit "7")
+    => (sql "limit 7"))
+  (fact "limit, all"
+    (limit (all))
+    => (sql "limit all"))
+  (fact "offset"
+    (offset "7")
+    => (sql "offset 7")))
+
 (facts "full select"
   (fact "basic"
     (select (column "c")
@@ -616,5 +627,12 @@
                      (where (compare-greater "c2" "100"))
                      (group "c2"))))
     => (sql "select c1, count(*) from abc where (c1 > 100) group by c1"
-            " except select c2, count(*) from abc where (c2 > 100) group by c2")))
+            " except select c2, count(*) from abc where (c2 > 100) group by c2"))
+  (fact "limit, offset"
+    (fact "basic"
+      (select (column "c")
+              (table-name "t")
+              (limit "7")
+              (offset "11"))
+      => (sql "select c from t limit 7 offset 11"))))
 
