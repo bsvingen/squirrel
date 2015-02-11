@@ -587,5 +587,34 @@
             ", w as"
             " (partition by x*2, y order by x using < nulls last,"
             " y rows between 7 preceding and current row)"
-            " order by c using f")))
+            " order by c using f"))
+  (fact "union"
+    (select (column "c1")
+            (column "count(*)")
+            (table-expression (table-name "abc"))
+            (where (compare-greater "c1" "100"))
+            (group "c1")
+            (union
+             (all)
+             (select (column "c2")
+                     (column "count(*)")
+                     (table-expression (table-name "abc"))
+                     (where (compare-greater "c2" "100"))
+                     (group "c2"))))
+    => (sql "select c1, count(*) from abc where (c1 > 100) group by c1"
+            " union all select c2, count(*) from abc where (c2 > 100) group by c2"))
+  (fact "except"
+    (select (column "c1")
+            (column "count(*)")
+            (table-expression (table-name "abc"))
+            (where (compare-greater "c1" "100"))
+            (group "c1")
+            (except
+             (select (column "c2")
+                     (column "count(*)")
+                     (table-expression (table-name "abc"))
+                     (where (compare-greater "c2" "100"))
+                     (group "c2"))))
+    => (sql "select c1, count(*) from abc where (c1 > 100) group by c1"
+            " except select c2, count(*) from abc where (c2 > 100) group by c2")))
 

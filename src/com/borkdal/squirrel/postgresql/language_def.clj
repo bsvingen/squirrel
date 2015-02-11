@@ -396,6 +396,29 @@
         (defs/compile-sql (:definition window))
         ")")))
 
+(entity/def-entity [all All]
+  "all")
+
+(defmacro set-operation
+  [name
+   entity
+   operation]
+  `(entity/def-entity [~name ~entity [[:single ~'All ~'all]
+                                      [:single ~'Select ~'select]]]
+     (utils/spaced-str
+      ~operation
+      (when-let [~'all (:all ~name)]
+        (defs/compile-sql ~'all))
+      (defs/compile-sql (:select ~name)))))
+
+(set-operation union Union "union")
+(set-operation intersect Intersect "intersect")
+(set-operation except Except "except")
+
+(entity/def-parent-entity [SetOperation [Union
+                                         Intersect
+                                         Except]])
+
 (entity/def-entity [select Select [[:single RecursiveWith recursive-with]
                                    [:single Star star]
                                    [:ordered Column columns]
@@ -405,6 +428,7 @@
                                    [:ordered Group groups]
                                    [:unordered Having havings]
                                    [:ordered Window windows]
+                                   [:single SetOperation set-operation]
                                    [:ordered OrderBy order-by]]]
   (utils/spaced-str
    (utils/when-seq-let [with-queries (:with-queries select)]
@@ -442,6 +466,8 @@
      (utils/spaced-str
       "window"
       (string/join ", " (map defs/compile-sql windows))))
+   (when-let [set-operation (:set-operation select)]
+     (defs/compile-sql set-operation))
    (utils/when-seq-let [order-by (:order-by select)]
      (utils/spaced-str
       "order by"
