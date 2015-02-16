@@ -342,7 +342,7 @@ With lots and lots of tests:
               (fact "should have a function name"
                 function-name => function-name?)
               (fact "should be calling count"
-                (:function-name function-name) => "count")))
+                (:string function-name) => "count")))
           (fact "should have star"
             (:star call) => truthy)))))
   (facts "minimum publication date"
@@ -358,7 +358,7 @@ With lots and lots of tests:
               (fact "should have a function name"
                 function-name => function-name?)
               (fact "should be calling min"
-                (:function-name function-name) => "min")))
+                (:string function-name) => "min")))
           (fact "parameters"
             (let [parameters (:parameters call)]
               (fact "should have a single string"
@@ -591,14 +591,14 @@ defined the `Column` entity, building on `Expression` and
 `ColumnAlias` entities:
 
 ```clj
-(entity/def-entity [column Column [[:single Expression expression]
-                                   [:single ColumnAlias alias]]]
+(entity/def-entity [Column [[:single Expression expression]
+							[:single ColumnAlias alias]]]
   (utils/spaced-str
-   (defs/compile-sql (:expression column))
-   (utils/when-seq-let [alias (:alias column)]
-                       (utils/spaced-str
-                        "as"
-                        (defs/compile-sql alias)))))
+   (defs/compile-sql expression)
+   (when (seq alias)
+	 (utils/spaced-str
+	  "as"
+	  (defs/compile-sql alias)))))
 ```
 
 [language_def.clj](https://github.com/bsvingen/squirrel/blob/master/src/com/borkdal/squirrel/postgresql/language_def.clj)

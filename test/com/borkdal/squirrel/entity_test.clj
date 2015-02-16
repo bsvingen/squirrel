@@ -87,19 +87,19 @@
   (fact "non-single"
     (get-add-pre-assertion :ordered 'old 'Sub) => nil))
 
-(def-entity [sub-1 Sub1 [[:single String name]]]
-  (:name sub-1))
+(def-entity [Sub1 [[:single String name]]]
+  name)
 
-(def-entity [sub-2 Sub2 [[:single Integer count]]]
-  (:count sub-2))
+(def-entity [Sub2 [[:single Integer count]]]
+  count)
 
-(def-entity [lonely Lonely])
+(def-entity [Lonely])
 
-(def-entity [main Main [[:ordered Sub2 sub-2] [:single Sub1 sub-1]]]
+(def-entity [Main [[:ordered Sub2 sub-2] [:single Sub1 sub-1]]]
   (str "combining "
-       (string/join ", " (map defs/compile-sql (:sub-2 main)))
+       (string/join ", " (map defs/compile-sql sub-2))
        " with "
-       (defs/compile-sql (:sub-1 main))))
+       (defs/compile-sql sub-1)))
 
 (def-parent-entity [SubSub [Sub1 Sub2]])
 
@@ -176,37 +176,37 @@
       (make-example-make-entity-call 'Main '[[:ordered String s]])
       => "```\n(make-main \"...\")\n```\n\n")))
 
-(def-entity [table-name TableName [[:single String table-name]]]
-  (:table-name table-name))
+(def-entity [TableName [[:single String name]]]
+  name)
 
-(def-entity [column Column [[:single String column-name]]]
-  (:column-name column))
+(def-entity [Column [[:single String column-name]]]
+  column-name)
 
-(def-entity [select Select [[:ordered Column columns] [:single TableName table-name]]]
+(def-entity [Select [[:ordered Column columns] [:single TableName table-name]]]
   (str "select "
-       (string/join ", " (map defs/compile-sql (:columns select)))
+       (string/join ", " (map defs/compile-sql columns))
        " from "
-       (defs/compile-sql (:table-name select))))
+       (defs/compile-sql table-name)))
 
 (facts "Checking TableName"
   (facts "make-table-name"
-    (let [table-name (make-table-name :table-name "table_name")]
+    (let [table-name (make-table-name :name "table_name")]
       (fact "checking type"
         (table-name? table-name) => true)
       (fact "getting name"
-        (:table-name table-name) => "table_name")
+        (:name table-name) => "table_name")
       (fact "adding a name should fail"
         (defs/add table-name "another_name") => (throws java.lang.AssertionError)))
     (let [empty-table (make-table-name)]
       (fact "checking add"
-        (:table-name (defs/add empty-table "another_table_name"))
+        (:name (defs/add empty-table "another_table_name"))
         => "another_table_name")))
   (facts "table-name macro"
     (let [table-name (table-name "table_name")]
       (fact "checking type"
         (table-name? table-name) => true)
       (fact "getting name"
-        (:table-name table-name) => "table_name"))))
+        (:name table-name) => "table_name"))))
 
 (facts "Checking Column"
   (facts "make-column"
@@ -238,7 +238,7 @@
       (fact "checking type"
         (select? select) => true)
       (fact "checking table name"
-        (:table-name (:table-name select)) => "table_name")
+        (:name (:table-name select)) => "table_name")
       (let [columns (:columns select)
             column1 (first columns)
             column2 (second columns)]
@@ -255,7 +255,7 @@
             select (defs/add (defs/add empty-select table-name)
                      column)]
         (fact "checking table name"
-          (:table-name (:table-name select)) => "table_name")))
+          (:name (:table-name select)) => "table_name")))
     (facts "checking triple add"
       (let [table-name (table-name "table_name")
             column1 (column "column1")
@@ -279,7 +279,7 @@
       (fact "checking type"
         (select? select) => true)
       (fact "checking table name"
-        (:table-name (:table-name select)) => "table_name")
+        (:name (:table-name select)) => "table_name")
       (let [columns (:columns select)
             column1 (first columns)
             column2 (second columns)]
@@ -318,17 +318,17 @@
       (fact "second column"
         (:column-name (second columns)) => "name"))))
 
-(def-entity [child-1 Child1 [[:single String name]]]
-  (:name child-1))
+(def-entity [Child1 [[:single String name]]]
+  name)
 
-(def-entity [child-2 Child2 [[:single String name]]]
-  (:name child-2))
+(def-entity [Child2 [[:single String name]]]
+  name)
 
 (def-parent-entity [Parent [Child1 Child2]])
 
-(def-entity [main Main [[:ordered Parent parent]]]
+(def-entity [Main [[:ordered Parent parent]]]
   (str "compiling "
-       (string/join ", " (map defs/compile-sql (:parent main)))))
+       (string/join ", " (map defs/compile-sql parent))))
 
 (facts "Checking entity macros hierarchies"
   (fact "sub-level"
