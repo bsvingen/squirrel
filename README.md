@@ -178,12 +178,12 @@ We can easily test this code (using
         (fact "should have table-name entities"
           table-names => (six-of table-name?))
         (fact "should have the correct table names"
-          (map :name table-names) => (just ["books"
-                                            "editions"
-                                            "subjects"
-                                            "shipments"
-                                            "customers"
-                                            "authors"] :in-any-order))))))
+          (map :string table-names) => (just ["books"
+											  "editions"
+											  "subjects"
+											  "shipments"
+											  "customers"
+											  "authors"] :in-any-order))))))
 ```
 
 For the sake of demonstration, these tests are a bit more elaborate the
@@ -410,11 +410,11 @@ We can now use the above to write the actual `build-query` function:
                       aggregate :count
                       aggregate-field nil}}]
   (-> (select)
-    (add (get-table-expressions))
-    (add (get-columns fields))
-    (add (get-join-conditions))
-    (add (get-aggregate-column aggregate aggregate-field))
-    (add (get-group-bys fields))))
+	  (add (get-table-expressions))
+	  (add (get-columns fields))
+	  (add (get-join-conditions))
+	  (add (get-aggregate-column aggregate aggregate-field))
+	  (add (get-group-bys fields))))
 ```
 
 With more tests:
