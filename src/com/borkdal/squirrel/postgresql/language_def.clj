@@ -1,157 +1,156 @@
 (ns com.borkdal.squirrel.postgresql.language-def
   (:require [clojure.string :as string]
-            [com.borkdal.squirrel.definitions :as defs]
-            [com.borkdal.clojure.utils :as utils]
-            [com.borkdal.squirrel.entity :as entity]))
+            [com.borkdal.squirrel.definitions :refer [compile-sql]]
+            [com.borkdal.squirrel.entity :refer [def-entity
+                                                 def-string-entity
+                                                 def-parent-entity
+                                                 declare-entity]]
+            [com.borkdal.squirrel.def-utils :refer [compile-when-present
+                                                    compile-seq
+                                                    compile-either
+                                                    compile-either-seq
+                                                    parenthesize
+                                                    comma-join]]
+            [com.borkdal.clojure.utils :refer [spaced-str]]))
 
-(entity/def-entity [Only]
+(def-entity [Only]
   "only")
 
-(entity/def-string-entity [TableName])
-(entity/def-string-entity [NameAlias])
-(entity/def-string-entity [ColumnAlias])
+(def-string-entity [TableName])
+(def-string-entity [NameAlias])
+(def-string-entity [ColumnAlias])
 
-(entity/def-entity [TableExpression [[:single Only only]
-                                     [:single TableName name]
-                                     [:single NameAlias alias]
-                                     [:ordered ColumnAlias column-aliases]]]
-  (utils/spaced-str
-   (when only
-     (defs/compile-sql only))
-   (defs/compile-sql name)
+(def-entity [TableExpression [[:single Only only]
+                              [:single TableName name]
+                              [:single NameAlias alias]
+                              [:ordered ColumnAlias column-aliases]]]
+  (spaced-str
+   (compile-when-present only)
+   (compile-sql name)
    (when alias
-     (utils/spaced-str
-      (utils/spaced-str "as"
-                        (defs/compile-sql alias))
+     (spaced-str
+      "as"
+      (compile-sql alias)
       (when (seq column-aliases)
-        (str "("
-             (string/join ", "
-                          (map defs/compile-sql column-aliases))
-             ")"))))))
+        (parenthesize
+         (comma-join
+          (compile-seq column-aliases))))))))
 
-(entity/declare-entity Condition)
-(entity/declare-entity FromItem)
-(entity/declare-entity Select)
+(declare-entity Condition)
+(declare-entity FromItem)
+(declare-entity Select)
 
-(entity/def-entity [Lateral]
+(def-entity [Lateral]
   "lateral")
 
-(entity/def-entity [SubSelect [[:single Lateral lateral]
-                               [:single Select select]
-                               [:single NameAlias alias]
-                               [:ordered ColumnAlias column-aliases]]]
-  (utils/spaced-str
-   (when lateral
-     (defs/compile-sql lateral))
-   (str "("
-        (defs/compile-sql select)
-        ")")
+(def-entity [SubSelect [[:single Lateral lateral]
+                        [:single Select select]
+                        [:single NameAlias alias]
+                        [:ordered ColumnAlias column-aliases]]]
+  (spaced-str
+   (compile-when-present lateral)
+   (parenthesize
+    (compile-sql select))
    "as"
-   (defs/compile-sql alias)
+   (compile-sql alias)
    (when (seq column-aliases)
-     (str "("
-          (string/join ", "
-                       (map defs/compile-sql column-aliases))
-          ")"))))
+     (parenthesize
+      (comma-join
+       (compile-seq column-aliases))))))
 
-(entity/def-string-entity [WithQueryName])
-(entity/def-string-entity [ColumnName])
-(entity/def-string-entity [DataType])
+(def-string-entity [WithQueryName])
+(def-string-entity [ColumnName])
+(def-string-entity [DataType])
 
-(entity/def-entity [WithQuery [[:single WithQueryName with-query-name]
-                               [:ordered ColumnName column-names]
-                               [:single Select with-select]]]
-  (utils/spaced-str
-   (defs/compile-sql with-query-name)
+(def-entity [WithQuery [[:single WithQueryName with-query-name]
+                        [:ordered ColumnName column-names]
+                        [:single Select with-select]]]
+  (spaced-str
+   (compile-sql with-query-name)
    (when (seq column-names)
-     (str "("
-          (string/join ", "
-                       (map defs/compile-sql column-names))
-          ")"))
+     (parenthesize
+      (comma-join
+       (compile-seq column-names))))
    "as"
-   (str "("
-        (defs/compile-sql with-select)
-        ")")))
+   (parenthesize
+    (compile-sql with-select))))
 
-(entity/def-entity [WithSelect [[:single WithQueryName with-query-name]
-                                [:single NameAlias alias]
-                                [:ordered ColumnAlias column-aliases]]]
-  (utils/spaced-str
-   (defs/compile-sql with-query-name)
+(def-entity [WithSelect [[:single WithQueryName with-query-name]
+                         [:single NameAlias alias]
+                         [:ordered ColumnAlias column-aliases]]]
+  (spaced-str
+   (compile-sql with-query-name)
    "as"
-   (defs/compile-sql alias)
+   (compile-sql alias)
    (when (seq column-aliases)
-     (str "("
-          (string/join ", "
-                       (map defs/compile-sql column-aliases))
-          ")"))))
+     (parenthesize
+      (comma-join
+       (compile-seq column-aliases))))))
 
-(entity/def-entity [RecursiveWith]
+(def-entity [RecursiveWith]
   "recursive")
 
-(entity/def-entity [ColumnDefinition [[:single ColumnName column-name]
-                                      [:single DataType data-type]]]
-  (utils/spaced-str
-   (defs/compile-sql column-name)
-   (defs/compile-sql data-type)))
+(def-entity [ColumnDefinition [[:single ColumnName column-name]
+                               [:single DataType data-type]]]
+  (spaced-str
+   (compile-sql column-name)
+   (compile-sql data-type)))
 
-(entity/def-string-entity [FunctionName])
-(entity/def-string-entity [FunctionArgument])
+(def-string-entity [FunctionName])
+(def-string-entity [FunctionArgument])
 
-(entity/def-entity [FromFunction [[:single FunctionName function-name]
-                                  [:ordered FunctionArgument function-arguments]
-                                  [:single NameAlias alias]
-                                  [:ordered ColumnAlias column-aliases]
-                                  [:ordered ColumnDefinition column-definitions]]]
-  (utils/spaced-str
-   (str (defs/compile-sql function-name)
-        "("
-        (string/join ", "
-                     (map defs/compile-sql function-arguments))
-        ")")
+(def-entity [FromFunction [[:single FunctionName function-name]
+                           [:ordered FunctionArgument function-arguments]
+                           [:single NameAlias alias]
+                           [:ordered ColumnAlias column-aliases]
+                           [:ordered ColumnDefinition column-definitions]]]
+  (spaced-str
+   (str
+    (compile-sql function-name)
+    (parenthesize
+     (comma-join
+      (compile-seq function-arguments))))
    "as"
    (if alias
-     (utils/spaced-str
-      (defs/compile-sql alias)
-      (str "("
-           (if (seq column-aliases)
-             (string/join ", " (map defs/compile-sql column-aliases))
-             (if (seq column-definitions)
-               (string/join ", " (map defs/compile-sql column-definitions))))
-           ")"))
-     (str "("
-          (string/join ", " (map defs/compile-sql column-definitions))
-          ")"))))
+     (spaced-str
+      (compile-sql alias)
+      (parenthesize
+       (comma-join
+        (compile-either-seq column-aliases
+                            column-definitions))))
+     (parenthesize
+      (comma-join
+       (compile-seq column-definitions))))))
 
-(entity/def-entity [Star]
+(def-entity [Star]
   "*")
 
-(entity/def-entity [LiteralString [[:single String expression]]]
+(def-entity [LiteralString [[:single String expression]]]
   (str "'"
-       (defs/compile-sql expression)
+       (compile-sql expression)
        "'"))
 
-(entity/declare-entity Expression)
+(declare-entity Expression)
 
-(entity/def-entity [FunctionCall [[:single FunctionName function-name]
-                                  [:ordered Expression parameters]
-                                  [:single Star star]]]
-  (str (defs/compile-sql function-name)
-       "("
-       (if star
-         (defs/compile-sql star)
-         (string/join ", " (map defs/compile-sql parameters)))
-       ")"))
+(def-entity [FunctionCall [[:single FunctionName function-name]
+                           [:ordered Expression parameters]
+                           [:single Star star]]]
+  (str
+   (compile-sql function-name)
+   (parenthesize
+    (if star
+      (compile-sql star)
+      (comma-join
+       (compile-seq parameters))))))
 
-(entity/def-parent-entity [Expression [String LiteralString FunctionCall]])
+(def-parent-entity [Expression [String LiteralString FunctionCall]])
 
 (defmacro def-compare-entity [[name entity operation]]
-  `(entity/def-entity [~entity [[:ordered ~'Expression ~'expressions]]]
-     (str "("
-          (defs/compile-sql (first ~'expressions))
-          ~operation
-          (defs/compile-sql (second ~'expressions))
-          ")")))
+  `(def-entity [~entity [[:ordered ~'Expression ~'expressions]]]
+     (parenthesize
+      (compile-sql (first ~'expressions))
+      ~operation
+      (compile-sql (second ~'expressions)))))
 
 (def-compare-entity [compare-equals CompareEquals " = "])
 (def-compare-entity [compare-not-equals CompareNotEquals " != "])
@@ -160,330 +159,317 @@
 (def-compare-entity [compare-greater-equals CompareGreaterEquals " >= "])
 (def-compare-entity [compare-less-equals CompareLessEquals " <= "])
 
-(entity/def-entity [IsNull [[:single Expression expression]]]
-  (str "("
-       (utils/spaced-str
-        (defs/compile-sql expression)
-        "is null")
-       ")"))
+(def-entity [IsNull [[:single Expression expression]]]
+  (parenthesize
+   (spaced-str
+    (compile-sql expression)
+    "is null")))
 
-(entity/def-entity [IsNotNull [[:single Expression expression]]]
-  (str "("
-       (utils/spaced-str
-        (defs/compile-sql expression)
-        "is not null")
-       ")"))
+(def-entity [IsNotNull [[:single Expression expression]]]
+  (parenthesize
+   (spaced-str
+    (compile-sql expression)
+    "is not null")))
 
-(entity/def-entity [AndCondition [[:unordered Condition conditions]]]
-  (str "("
-       (string/join " and " (map defs/compile-sql conditions))
-       ")"))
+(def-entity [AndCondition [[:unordered Condition conditions]]]
+  (parenthesize
+   (string/join " and " (compile-seq conditions))))
 
-(entity/def-entity [OrCondition [[:unordered Condition conditions]]]
-  (str "("
-       (string/join " or " (map defs/compile-sql conditions))
-       ")"))
+(def-entity [OrCondition [[:unordered Condition conditions]]]
+  (parenthesize
+   (string/join " or " (compile-seq conditions))))
 
-(entity/def-entity [NotCondition [[:single Condition expression]]]
-  (str "(not "
-       (defs/compile-sql expression)
-       ")"))
+(def-entity [NotCondition [[:single Condition expression]]]
+  (parenthesize
+   (spaced-str
+    "not"
+    (compile-sql expression))))
 
-(entity/def-parent-entity [Condition [Expression
-                                      CompareEquals
-                                      CompareGreater
-                                      CompareLess
-                                      CompareGreaterEquals
-                                      CompareLessEquals
-                                      CompareNotEquals
-                                      IsNull
-                                      IsNotNull
-                                      AndCondition
-                                      OrCondition
-                                      NotCondition]])
+(def-parent-entity [Condition [Expression
+                               CompareEquals
+                               CompareGreater
+                               CompareLess
+                               CompareGreaterEquals
+                               CompareLessEquals
+                               CompareNotEquals
+                               IsNull
+                               IsNotNull
+                               AndCondition
+                               OrCondition
+                               NotCondition]])
 
-(entity/def-entity [InnerJoin]
+(def-entity [InnerJoin]
   "join")
 
-(entity/def-entity [LeftJoin]
+(def-entity [LeftJoin]
   "left join")
 
-(entity/def-entity [RightJoin]
+(def-entity [RightJoin]
   "right join")
 
-(entity/def-entity [FullJoin]
+(def-entity [FullJoin]
   "full join")
 
-(entity/def-entity [CrossJoin]
+(def-entity [CrossJoin]
   "cross join")
 
-(entity/def-entity [Natural]
+(def-entity [Natural]
   "natural")
 
-(entity/def-parent-entity [JoinType [InnerJoin
-                                     LeftJoin
-                                     RightJoin
-                                     FullJoin
-                                     CrossJoin]])
+(def-parent-entity [JoinType [InnerJoin
+                              LeftJoin
+                              RightJoin
+                              FullJoin
+                              CrossJoin]])
 
-(entity/def-entity [Join [[:single JoinType join-type]
-                          [:single Natural natural]
-                          [:ordered FromItem from-items]
-                          [:single Condition join-condition]
-                          [:ordered ColumnName join-columns]]]
+(def-entity [Join [[:single JoinType join-type]
+                   [:single Natural natural]
+                   [:ordered FromItem from-items]
+                   [:single Condition join-condition]
+                   [:ordered ColumnName join-columns]]]
   (let [[first-from-item second-from-item] from-items]
-    (utils/spaced-str
-     (defs/compile-sql first-from-item)
+    (spaced-str
+     (compile-sql first-from-item)
      (if (cross-join? join-type)
-       (utils/spaced-str
-        (defs/compile-sql join-type)
-        (defs/compile-sql second-from-item))
-       (utils/spaced-str
-        (when natural
-          (defs/compile-sql natural))
-        (defs/compile-sql join-type)
-        (defs/compile-sql second-from-item)
+       (spaced-str
+        (compile-sql join-type)
+        (compile-sql second-from-item))
+       (spaced-str
+        (compile-when-present natural)
+        (compile-sql join-type)
+        (compile-sql second-from-item)
         (cond
-          (seq join-condition) (utils/spaced-str
+          (seq join-condition) (spaced-str
                                 "on"
-                                (defs/compile-sql join-condition))
-          (seq join-columns) (utils/spaced-str
+                                (compile-sql join-condition))
+          (seq join-columns) (spaced-str
                               "using"
-                              (str "("
-                                   (string/join ", " (map defs/compile-sql join-columns))
-                                   ")"))))))))
+                              (parenthesize
+                               (comma-join
+                                (compile-seq join-columns))))))))))
 
-(entity/def-parent-entity [FromItem [TableName
-                                     TableExpression
-                                     SubSelect
-                                     WithSelect
-                                     FromFunction
-                                     Join]])
+(def-parent-entity [FromItem [TableName
+                              TableExpression
+                              SubSelect
+                              WithSelect
+                              FromFunction
+                              Join]])
 
-(entity/def-entity [Where [[:unordered Condition conditions]]]
+(def-entity [Where [[:unordered Condition conditions]]]
   (if (> (count conditions) 1)
-    (str "("
-         (string/join " and " (map defs/compile-sql conditions))
-         ")")
-    (defs/compile-sql (first conditions))))
+    (parenthesize
+     (string/join " and " (compile-seq conditions)))
+    (compile-sql
+     (first conditions))))
 
-(entity/def-entity [Column [[:single Expression expression]
-                            [:single ColumnAlias alias]]]
-  (utils/spaced-str
-   (defs/compile-sql expression)
+(def-entity [Column [[:single Expression expression]
+                     [:single ColumnAlias alias]]]
+  (spaced-str
+   (compile-sql expression)
    (when (seq alias)
-     (utils/spaced-str
+     (spaced-str
       "as"
-      (defs/compile-sql alias)))))
+      (compile-sql alias)))))
 
-(entity/def-entity [Group [[:single Expression expression]]]
-  (defs/compile-sql expression))
+(def-entity [Group [[:single Expression expression]]]
+  (compile-sql expression))
 
-(entity/def-entity [Having [[:single Condition condition]]]
-  (defs/compile-sql condition))
+(def-entity [Having [[:single Condition condition]]]
+  (compile-sql condition))
 
-(entity/def-entity [Desc]
+(def-entity [Desc]
   "desc")
 
-(entity/def-entity [Using [[:single String operator]]]
-  (utils/spaced-str
+(def-entity [Using [[:single String operator]]]
+  (spaced-str
    "using"
-   (defs/compile-sql operator)))
+   (compile-sql operator)))
 
-(entity/def-entity [NullsFirst]
+(def-entity [NullsFirst]
   "nulls first")
 
-(entity/def-entity [NullsLast]
+(def-entity [NullsLast]
   "nulls last")
 
-(entity/def-entity [OrderBy [[:single Expression expression]
-                             [:single Desc desc]
-                             [:single Using using]
-                             [:single NullsFirst nulls-first]
-                             [:single NullsLast nulls-last]]]
-  (utils/spaced-str
-   (defs/compile-sql expression)
-   (cond
-     desc (defs/compile-sql desc)
-     using (defs/compile-sql using))
-   (cond
-     nulls-first (defs/compile-sql nulls-first)
-     nulls-last (defs/compile-sql nulls-last))))
+(def-entity [OrderBy [[:single Expression expression]
+                      [:single Desc desc]
+                      [:single Using using]
+                      [:single NullsFirst nulls-first]
+                      [:single NullsLast nulls-last]]]
+  (spaced-str
+   (compile-sql expression)
+   (compile-either desc using)
+   (compile-either nulls-first nulls-last)))
 
-(entity/def-string-entity [WindowName])
+(def-string-entity [WindowName])
 
-(entity/def-entity [WindowPartition [[:single Expression expression]]]
-  (defs/compile-sql expression))
+(def-entity [WindowPartition [[:single Expression expression]]]
+  (compile-sql expression))
 
-(entity/def-entity [WindowRange]
+(def-entity [WindowRange]
   "range")
 
-(entity/def-entity [WindowRows]
+(def-entity [WindowRows]
   "rows")
 
-(entity/def-entity [UnboundedPreceding]
+(def-entity [UnboundedPreceding]
   "unbounded preceding")
 
-(entity/def-entity [ValuePreceding [[:single String value]]]
-  (utils/spaced-str
-   (defs/compile-sql value)
+(def-entity [ValuePreceding [[:single String value]]]
+  (spaced-str
+   (compile-sql value)
    "preceding"))
 
-(entity/def-entity [CurrentRow]
+(def-entity [CurrentRow]
   "current row")
 
-(entity/def-entity [ValueFollowing [[:single String value]]]
-  (utils/spaced-str
-   (defs/compile-sql value)
+(def-entity [ValueFollowing [[:single String value]]]
+  (spaced-str
+   (compile-sql value)
    "following"))
 
-(entity/def-entity [UnboundedFollowing]
+(def-entity [UnboundedFollowing]
   "unbounded following")
 
-(entity/def-parent-entity [WindowFrame [UnboundedPreceding
-                                        ValuePreceding
-                                        CurrentRow
-                                        ValueFollowing
-                                        UnboundedFollowing]])
+(def-parent-entity [WindowFrame [UnboundedPreceding
+                                 ValuePreceding
+                                 CurrentRow
+                                 ValueFollowing
+                                 UnboundedFollowing]])
 
 
-(entity/def-entity [FrameClause [[:single WindowRange range]
-                                 [:single WindowRows rows]
-                                 [:ordered WindowFrame frames]]]
-  (utils/spaced-str
-   (cond
-     range (defs/compile-sql range)
-     rows (defs/compile-sql rows))
+(def-entity [FrameClause [[:single WindowRange range]
+                          [:single WindowRows rows]
+                          [:ordered WindowFrame frames]]]
+  (spaced-str
+   (compile-either range rows)
    (if (> (count frames) 1)
-     (utils/spaced-str
+     (spaced-str
       "between"
-      (defs/compile-sql (first frames))
+      (compile-sql (first frames))
       "and"
-      (defs/compile-sql (second frames)))
-     (defs/compile-sql (first frames)))))
+      (compile-sql (second frames)))
+     (compile-sql (first frames)))))
 
-(entity/def-entity [WindowDefinition [[:single WindowName name]
-                                      [:ordered WindowPartition partitions]
-                                      [:ordered OrderBy order-by]
-                                      [:single FrameClause frame-clause]]]
-  (utils/spaced-str
-   (when name
-     (defs/compile-sql name))
+(def-entity [WindowDefinition [[:single WindowName name]
+                               [:ordered WindowPartition partitions]
+                               [:ordered OrderBy order-by]
+                               [:single FrameClause frame-clause]]]
+  (spaced-str
+   (compile-when-present name)
    (when (seq partitions)
-     (utils/spaced-str
+     (spaced-str
       "partition by"
-      (string/join ", " (map defs/compile-sql partitions))))
+      (comma-join
+       (compile-seq partitions))))
    (when order-by
-     (utils/spaced-str
+     (spaced-str
       "order by"
-      (string/join ", " (map defs/compile-sql order-by))))
-   (when frame-clause
-     (defs/compile-sql frame-clause))))
+      (comma-join
+       (compile-seq order-by))))
+   (compile-when-present frame-clause)))
 
-(entity/def-entity [Window [[:single WindowName name]
-                            [:single WindowDefinition definition]]]
-  (utils/spaced-str
-   (defs/compile-sql name)
+(def-entity [Window [[:single WindowName name]
+                     [:single WindowDefinition definition]]]
+  (spaced-str
+   (compile-sql name)
    "as"
-   (str "("
-        (defs/compile-sql definition)
-        ")")))
+   (parenthesize
+    (compile-sql definition))))
 
-(entity/def-entity [All]
+(def-entity [All]
   "all")
 
 (defmacro set-operation
   [name
    entity
    operation]
-  `(entity/def-entity [~entity [[:single ~'All ~'all]
-                                [:single ~'Select ~'select]]]
-     (utils/spaced-str
+  `(def-entity [~entity [[:single ~'All ~'all]
+                         [:single ~'Select ~'select]]]
+     (spaced-str
       ~operation
-      (when ~'all
-        (defs/compile-sql ~'all))
-      (defs/compile-sql ~'select))))
+      (compile-when-present ~'all)
+      (compile-sql ~'select))))
 
 (set-operation union Union "union")
 (set-operation intersect Intersect "intersect")
 (set-operation except Except "except")
 
-(entity/def-parent-entity [SetOperation [Union
-                                         Intersect
-                                         Except]])
+(def-parent-entity [SetOperation [Union
+                                  Intersect
+                                  Except]])
 
-(entity/def-entity [Limit [[:single Expression count]
-                           [:single All all]]]
-  (utils/spaced-str
+(def-entity [Limit [[:single Expression count]
+                    [:single All all]]]
+  (spaced-str
    "limit"
-   (defs/compile-sql
-     (if count
-       count
-       all))))
+   (compile-sql
+    (if count
+      count
+      all))))
 
-(entity/def-entity [Offset [[:single Expression start]]]
-  (utils/spaced-str
+(def-entity [Offset [[:single Expression start]]]
+  (spaced-str
    "offset"
-   (defs/compile-sql start)))
+   (compile-sql start)))
 
-(entity/def-entity [Select [[:single RecursiveWith recursive-with]
-                            [:single Star star]
-                            [:ordered Column columns]
-                            [:ordered WithQuery with-queries]
-                            [:ordered FromItem from-items]
-                            [:unordered Where wheres]
-                            [:ordered Group groups]
-                            [:unordered Having havings]
-                            [:ordered Window windows]
-                            [:single SetOperation set-operation]
-                            [:ordered OrderBy order-by]
-                            [:single Limit limit]
-                            [:single Offset offset]]]
-  (utils/spaced-str
+(def-entity [Select [[:single RecursiveWith recursive-with]
+                     [:single Star star]
+                     [:ordered Column columns]
+                     [:ordered WithQuery with-queries]
+                     [:ordered FromItem from-items]
+                     [:unordered Where wheres]
+                     [:ordered Group groups]
+                     [:unordered Having havings]
+                     [:ordered Window windows]
+                     [:single SetOperation set-operation]
+                     [:ordered OrderBy order-by]
+                     [:single Limit limit]
+                     [:single Offset offset]]]
+  (spaced-str
    (when (seq with-queries)
-     (utils/spaced-str
+     (spaced-str
       "with"
-      (when recursive-with
-        (defs/compile-sql recursive-with))
-      (string/join ", "
-                   (map defs/compile-sql with-queries))))
+      (compile-when-present recursive-with)
+      (comma-join
+       (compile-seq with-queries))))
    "select"
-   (if star
-     (defs/compile-sql star)
-     (if (seq columns)
-       (string/join ", " (map defs/compile-sql columns))))
+   (cond
+     star (compile-sql star)
+     (seq columns) (comma-join
+                    (compile-seq columns)))
    "from"
-   (string/join ", "
-                (map defs/compile-sql from-items))
+   (comma-join
+    (compile-seq from-items))
    (when (seq wheres)
-     (utils/spaced-str
+     (spaced-str
       "where"
       (if (= (count wheres) 1)
-        (defs/compile-sql (first wheres))
-        (str "("
-             (string/join " and "
-                          (map defs/compile-sql wheres))
-             ")"))))
+        (compile-sql (first wheres))
+        (parenthesize
+         (string/join " and "
+                      (compile-seq wheres))))))
    (when (seq groups)
-     (utils/spaced-str
+     (spaced-str
       "group by"
-      (string/join ", " (map defs/compile-sql groups))))
+      (comma-join
+       (compile-seq groups))))
    (when (seq havings)
-     (utils/spaced-str
+     (spaced-str
       "having"
-      (string/join ", " (map defs/compile-sql havings))))
+      (comma-join
+       (compile-seq havings))))
    (when (seq windows)
-     (utils/spaced-str
+     (spaced-str
       "window"
-      (string/join ", " (map defs/compile-sql windows))))
-   (when set-operation
-     (defs/compile-sql set-operation))
+      (comma-join
+       (compile-seq windows))))
+   (compile-when-present set-operation)
    (when (seq order-by)
-     (utils/spaced-str
+     (spaced-str
       "order by"
-      (string/join ", " (map defs/compile-sql order-by))))
-   (when limit
-     (defs/compile-sql limit))
-   (when offset
-     (defs/compile-sql offset))))
+      (comma-join
+       (compile-seq order-by))))
+   (compile-when-present limit)
+   (compile-when-present offset)))
 
