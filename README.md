@@ -560,7 +560,7 @@ example.
 
 The following are available:
 
-* The macro
+* The entity function
 [column](http://bsvingen.github.io/squirrel/com.borkdal.squirrel.postgresql.html#var-column), used to
 create an entity .
 
@@ -574,7 +574,7 @@ Use like this:
 * The function
 [make-column](http://bsvingen.github.io/squirrel/com.borkdal.squirrel.postgresql.html#var-make-column),
 also used to created entities - unless you really need a function you
-should probably use the macro instead.
+should probably use the entity function above instead.
 
 * The function
 [column?](http://bsvingen.github.io/squirrel/com.borkdal.squirrel.postgresql.html#var-column.3F),

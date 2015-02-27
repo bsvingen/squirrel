@@ -171,7 +171,7 @@
                (map #(str "* " (make-element-docstring %))
                     structure)))
 
-(defn- make-example-entity-macro-call
+(defn- make-example-entity-function-call
   [name
    structure]
   (let [name-symbol (str (get-name-symbol name))
@@ -288,27 +288,27 @@
   `(do
      ~@(map #(make-add-entity-method name %) structure)))
 
-(defn- make-entity-macro
+(defn- make-entity-function
   [name
    structure]
-  `(defmacro ~(with-meta (get-name-symbol name)
-                {:import true})
+  `(defn ~(with-meta (get-name-symbol name)
+            {:import true})
      ~(str
-       "Macro for creating an entity of type `" name "`.\n\n"
+       "Function for creating an entity of type `" name "`.\n\n"
        (if (seq structure)
          (str "It accepts (a subset of) the following sub-entities:\n\n"
               (make-structure-docstring structure))
          (str "It has no sub-entities."))
        "\n\n"
        "For instance,\n\n"
-       (make-example-entity-macro-call name structure))
+       (make-example-entity-function-call name structure))
      ~@(if (seq structure)
          `([& ~'rest]
-           `(reduce defs/add
-                    (into [(~~(symbol (get-make-function-name name)))]
-                          (list ~@~'rest))))
+           (reduce defs/add
+                   (into [(~(symbol (get-make-function-name name)))]
+                         (list ~'rest))))
          `([]
-           `(~~(symbol (get-make-function-name name)))))))
+           (~(symbol (get-make-function-name name)))))))
 
 (defn- make-compile-method
   [name
@@ -329,8 +329,8 @@
   Parameters:
 
   name
-  : The entity name. The name `DummyEntity` will create functions and
-  macros with the name `dummy-entity`, as explained below.
+  : The entity name. The name `DummyEntity` will create functions
+  containing the name `dummy-entity`, as explained below.
 
   structure
   : A vector of vectors specifying sub-entities.
@@ -370,7 +370,7 @@
   function [[com.borkdal.squirrel.definitions/add]], for adding
   sub-entities to instances of this entity.
 
-  * The macro `dummy-entity` for creating instances of this entity.
+  * The function `dummy-entity` for creating instances of this entity.
 
   * A method for the generic
   function [[com.borkdal.squirrel.definitions/compile-sql]], for
@@ -380,9 +380,9 @@
 
   ```
   (entity/def-entity [LiteralString [[:single String expression]]]
-    (str \"'\"
-         (defs/compile-sql expression)
-         \"'\"))
+  (str \"'\"
+  (defs/compile-sql expression)
+  \"'\"))
   ```
 
   This specifies an entity called LiteralString, containing a single
@@ -415,13 +415,13 @@
         (make-update-function name structure))
      ~(make-add-nil-method name)
      ~(make-add-entity-methods name structure)
-     ~(make-entity-macro name structure)
+     ~(make-entity-function name structure)
      ~(make-compile-method name structure body)))
 
 (defmacro def-string-entity
   "Define an entity that is a simple string.
 
-  All the functions and macros from [[def-entity]] are created.
+  All the functions from [[def-entity]] are created.
 
   The SQL string for the entity is the string itself.
   "

@@ -22,7 +22,7 @@
                    make-entity-choice-docstring
                    make-element-docstring
                    make-structure-docstring
-                   make-example-entity-macro-call
+                   make-example-entity-function-call
                    make-example-make-entity-call)
 
 (fact "Checking get-names"
@@ -103,7 +103,7 @@
 
 (def-parent-entity [SubSub [Sub1 Sub2]])
 
-(facts "Checking entity macros"
+(facts "Checking entity functions"
   (fact "sub-level"
     (defs/compile-sql (sub-1 "abc")) => "abc")
   (fact "failing sub-level"
@@ -147,21 +147,21 @@
             "\n    * `Sub2`: ([[sub-2]], [[sub-2?]], [[make-sub-2]], [[update-sub-2]])."
             "\n\n* A single `Sub1` with the name `sub-1` :"
             "\n    * `Sub1`: ([[sub-1]], [[sub-1?]], [[make-sub-1]], [[update-sub-1]])."))
-  (facts "make-example-entity-macro-call"
+  (facts "make-example-entity-function-call"
     (fact "custom"
-      (make-example-entity-macro-call 'Main '[[:ordered Sub2 sub-2] [:single Sub1 sub-1]])
+      (make-example-entity-function-call 'Main '[[:ordered Sub2 sub-2] [:single Sub1 sub-1]])
       => (str "```"
               "\n(main (sub-2 ...)"
               "\n      (sub-1 ...))"
               "\n```\n\n"))
     (fact "single"
-      (make-example-entity-macro-call 'Lonely nil)
+      (make-example-entity-function-call 'Lonely nil)
       => "```\n(lonely)\n```\n\n")
     (facts "string"
-      (make-example-entity-macro-call 'Main '[[:ordered String s]])
+      (make-example-entity-function-call 'Main '[[:ordered String s]])
       => "```\n(main \"...\")\n```\n\n")
     (fact "parent"
-      (make-example-entity-macro-call 'High '[[:single SubSub subsub]])
+      (make-example-entity-function-call 'High '[[:single SubSub subsub]])
       => "```\n(high (sub-1 ...))\n```\n\n"))
   (facts "make-example-make-entity-call"
     (fact "custom"
@@ -201,7 +201,7 @@
       (fact "checking add"
         (:name (defs/add empty-table "another_table_name"))
         => "another_table_name")))
-  (facts "table-name macro"
+  (facts "table-name function"
     (let [table-name (table-name "table_name")]
       (fact "checking type"
         (table-name? table-name) => true)
@@ -221,7 +221,7 @@
       (fact "checking defs/add"
         (:column-name (defs/add empty-column "another_column_name"))
         => "another_column_name")))
-  (facts "column macro"
+  (facts "column function"
     (let [column (column "column_name")]
       (fact "checking type"
         (column? column) => true)
@@ -272,7 +272,7 @@
           (:column-name ((:columns select) 1)) => "column2")
         (fact "checking third column name"
           (:column-name ((:columns select) 2)) => "column3"))))
-  (facts "select macro"
+  (facts "select function"
     (let [select (select (table-name "table_name")
                          (column "column1")
                          (column "column2"))]
@@ -330,7 +330,7 @@
   (str "compiling "
        (string/join ", " (map defs/compile-sql parent))))
 
-(facts "Checking entity macros hierarchies"
+(facts "Checking hierarchies"
   (fact "sub-level"
     (defs/compile-sql (child-1 "abc")) => "abc")
   (fact "failing sub-level"
