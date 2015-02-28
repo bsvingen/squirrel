@@ -178,12 +178,12 @@ We can easily test this code (using
         (fact "should have table-name entities"
           table-names => (six-of table-name?))
         (fact "should have the correct table names"
-          (map :name table-names) => (just ["books"
-                                            "editions"
-                                            "subjects"
-                                            "shipments"
-                                            "customers"
-                                            "authors"] :in-any-order))))))
+          (map :string table-names) => (just ["books"
+											  "editions"
+											  "subjects"
+											  "shipments"
+											  "customers"
+											  "authors"] :in-any-order))))))
 ```
 
 For the sake of demonstration, these tests are a bit more elaborate the
@@ -342,7 +342,7 @@ With lots and lots of tests:
               (fact "should have a function name"
                 function-name => function-name?)
               (fact "should be calling count"
-                (:function-name function-name) => "count")))
+                (:string function-name) => "count")))
           (fact "should have star"
             (:star call) => truthy)))))
   (facts "minimum publication date"
@@ -358,7 +358,7 @@ With lots and lots of tests:
               (fact "should have a function name"
                 function-name => function-name?)
               (fact "should be calling min"
-                (:function-name function-name) => "min")))
+                (:string function-name) => "min")))
           (fact "parameters"
             (let [parameters (:parameters call)]
               (fact "should have a single string"
@@ -410,11 +410,11 @@ We can now use the above to write the actual `build-query` function:
                       aggregate :count
                       aggregate-field nil}}]
   (-> (select)
-    (add (get-table-expressions))
-    (add (get-columns fields))
-    (add (get-join-conditions))
-    (add (get-aggregate-column aggregate aggregate-field))
-    (add (get-group-bys fields))))
+	  (add (get-table-expressions))
+	  (add (get-columns fields))
+	  (add (get-join-conditions))
+	  (add (get-aggregate-column aggregate aggregate-field))
+	  (add (get-group-bys fields))))
 ```
 
 With more tests:
@@ -560,7 +560,7 @@ example.
 
 The following are available:
 
-* The macro
+* The entity function
 [column](http://bsvingen.github.io/squirrel/com.borkdal.squirrel.postgresql.html#var-column), used to
 create an entity .
 
@@ -574,7 +574,7 @@ Use like this:
 * The function
 [make-column](http://bsvingen.github.io/squirrel/com.borkdal.squirrel.postgresql.html#var-make-column),
 also used to created entities - unless you really need a function you
-should probably use the macro instead.
+should probably use the entity function above instead.
 
 * The function
 [column?](http://bsvingen.github.io/squirrel/com.borkdal.squirrel.postgresql.html#var-column.3F),
@@ -591,14 +591,14 @@ defined the `Column` entity, building on `Expression` and
 `ColumnAlias` entities:
 
 ```clj
-(entity/def-entity [column Column [[:single Expression expression]
-                                   [:single ColumnAlias alias]]]
+(entity/def-entity [Column [[:single Expression expression]
+							[:single ColumnAlias alias]]]
   (utils/spaced-str
-   (defs/compile-sql (:expression column))
-   (utils/when-seq-let [alias (:alias column)]
-                       (utils/spaced-str
-                        "as"
-                        (defs/compile-sql alias)))))
+   (defs/compile-sql expression)
+   (when (seq alias)
+	 (utils/spaced-str
+	  "as"
+	  (defs/compile-sql alias)))))
 ```
 
 [language_def.clj](https://github.com/bsvingen/squirrel/blob/master/src/com/borkdal/squirrel/postgresql/language_def.clj)

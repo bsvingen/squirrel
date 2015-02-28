@@ -171,7 +171,7 @@
                (map #(str "* " (make-element-docstring %))
                     structure)))
 
-(defn- make-example-entity-macro-call
+(defn- make-example-entity-function-call
   [name
    structure]
   (let [name-symbol (str (get-name-symbol name))
@@ -288,33 +288,35 @@
   `(do
      ~@(map #(make-add-entity-method name %) structure)))
 
-(defn- make-entity-macro
+(defn- make-entity-function
   [name
    structure]
-  `(defmacro ~(with-meta (get-name-symbol name)
-                {:import true})
+  `(defn ~(with-meta (get-name-symbol name)
+            {:import true})
      ~(str
-       "Macro for creating an entity of type `" name "`.\n\n"
+       "Function for creating an entity of type `" name "`.\n\n"
        (if (seq structure)
          (str "It accepts (a subset of) the following sub-entities:\n\n"
               (make-structure-docstring structure))
          (str "It has no sub-entities."))
        "\n\n"
        "For instance,\n\n"
-       (make-example-entity-macro-call name structure))
+       (make-example-entity-function-call name structure))
      ~@(if (seq structure)
          `([& ~'rest]
-           `(reduce defs/add
-                    (into [(~~(symbol (get-make-function-name name)))]
-                          (list ~@~'rest))))
+           (reduce defs/add
+                   (into [(~(symbol (get-make-function-name name)))]
+                         (list ~'rest))))
          `([]
-           `(~~(symbol (get-make-function-name name)))))))
+           (~(symbol (get-make-function-name name)))))))
 
 (defn- make-compile-method
-  [var
-   name
+  [name
+   structure
    body]
-  `(defmethod defs/compile-sql ~(get-name-type-keyword name) [~var] ~@body))
+  `(defmethod defs/compile-sql ~(get-name-type-keyword name)
+     [{:keys [~@(get-names structure)]}]
+     ~@body))
 
 (defn- make-derive
   [child
@@ -326,12 +328,9 @@
 
   Parameters:
 
-  var
-  : The variable used to refer to the entity in the body.
-
   name
-  : The entity name. The name `DummyEntity` will create functions and
-  macros with the name `dummy-entity`, as explained below.
+  : The entity name. The name `DummyEntity` will create functions
+  containing the name `dummy-entity`, as explained below.
 
   structure
   : A vector of vectors specifying sub-entities.
@@ -371,45 +370,42 @@
   function [[com.borkdal.squirrel.definitions/add]], for adding
   sub-entities to instances of this entity.
 
-  * The macro `dummy-entity` for creating instances of this entity.
+  * The function `dummy-entity` for creating instances of this entity.
 
   * A method for the generic
   function [[com.borkdal.squirrel.definitions/compile-sql]], for
   compiling instances of this entity into SQL strings.
 
-  An example, from [[com.borkdal.squirrel.postgresql.language]]:
+  An example, from [[com.borkdal.squirrel.postgresql.language-def]]:
 
   ```
-  (entity/def-entity [string-expression
-                      StringExpression
-                      [[:single ValueExpression expression]]]
-    (str \"'\"
-         (defs/compile-sql (:expression string-expression))
-         \"'\"))
+  (entity/def-entity [LiteralString [[:single String expression]]]
+  (str \"'\"
+  (defs/compile-sql expression)
+  \"'\"))
   ```
 
-  This specifies an entity called StringExpression, containing a
-  single ValueExpression sub-entity, where the SQL string for the
-  StringExpression is the SQL string for the ValueExpression
-  surrounded by single quotes.
+  This specifies an entity called LiteralString, containing a single
+  String sub-entity, where the SQL string for the LiteralString is the
+  SQL string for the sub-entity surrounded by single quotes.
 
   The following entities are then created:
 
-  * The record `StringExpression` with the single field `expression`.
+  * The record `LiteralString` with the single field `expression`.
 
   * Entity methods
   for [[com.borkdal.squirrel.definitions/record-type]], [[com.borkdal.squirrel.definitions/add]]
   and [[com.borkdal.squirrel.definitions/compile-sql]].
 
-  * [[com.borkdal.squirrel.postgresql.language/string-expression]]
+  * [[com.borkdal.squirrel.postgresql.language-def/literal-string]]
 
-  * [[com.borkdal.squirrel.postgresql.language/string-expression?]]
+  * [[com.borkdal.squirrel.postgresql.language-def/literal-string?]]
 
-  * [[com.borkdal.squirrel.postgresql.language/make-string-expression]]
+  * [[com.borkdal.squirrel.postgresql.language-def/make-literal-string]]
 
-  * [[com.borkdal.squirrel.postgresql.language/update-string-expression]]
+  * [[com.borkdal.squirrel.postgresql.language-def/update-literal-string]]
   "
-  [[var name structure] & body]
+  [[name structure] & body]
   `(do
      ~(make-def-record name structure)
      ~(make-record-type name)
@@ -419,19 +415,19 @@
         (make-update-function name structure))
      ~(make-add-nil-method name)
      ~(make-add-entity-methods name structure)
-     ~(make-entity-macro name structure)
-     ~(make-compile-method var name body)))
+     ~(make-entity-function name structure)
+     ~(make-compile-method name structure body)))
 
 (defmacro def-string-entity
   "Define an entity that is a simple string.
 
-  All the functions and macros from [[def-entity]] are created.
+  All the functions from [[def-entity]] are created.
 
   The SQL string for the entity is the string itself.
   "
-  [[name entity]]
-  `(def-entity [var# ~entity [[:single ~(symbol 'String) ~name]]]
-     (~(keyword name) var#)))
+  [[entity]]
+  `(def-entity [~entity [[:single ~(symbol 'String) ~'string]]]
+     ~'string))
 
 (defmacro def-parent-entity
   "Define an entity as the parent of children entities.
@@ -440,17 +436,16 @@
   context where the sub-entities can be used.
 
   The following is an example
-  from [[com.borkdal.squirrel.postgresql.language]]:
+  from [[com.borkdal.squirrel.postgresql.language-def]]:
 
   ```
-  (entity/def-parent-entity [Expression [ValueExpression StringExpression]])
+  (entity/def-parent-entity [Expression [String LiteralString FunctionCall]])
   ```
 
-  Values of type `ValueExpression` and `StringExpression` can now be
-  used as sub-entities for entities that take ` Expression`,
-  and [[com.borkdal.squirrel.postgresql.language/expression?]] will
-  return `true` for values of type `ValueExpression` and
-  `StringExpression`.
+  Values of type `String`, `LiteralString` and `FunctionCall` can now
+  be used as sub-entities for entities that take ` Expression`,
+  and [[com.borkdal.squirrel.postgresql.language-def/expression?]]
+  will return `true` for values of these types.
   "
   [[parent [& children]]]
   `(do

@@ -6,10 +6,6 @@
   on [type](http://clojuredocs.org/clojure.core/type)."
   type)
 
-(defmethod record-type :default
-  [_]
-  false)
-
 (defmethod record-type nil
   [_]
   nil)
