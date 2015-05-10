@@ -1,4 +1,4 @@
-(ns com.borkdal.squirrel.test-utils
+(ns com.borkdal.squirrel.midje-utils
   (:require [midje.sweet :refer :all]
             [com.borkdal.squirrel.definitions :as defs]))
 

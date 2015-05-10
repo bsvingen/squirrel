@@ -1,6 +1,6 @@
 (ns com.borkdal.squirrel.postgresql.language-def-test
   (:require [midje.sweet :refer :all]
-            [com.borkdal.squirrel.test-utils :refer [sql]]
+            [com.borkdal.squirrel.midje-utils :refer [sql]]
             [com.borkdal.squirrel.definitions :as defs]
             [com.borkdal.squirrel.postgresql.language-def :refer :all]))
 
