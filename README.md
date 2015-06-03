@@ -30,7 +30,7 @@ only.
 Leiningen coordinate:
 
 ```clj
-[com.borkdal/squirrel "0.2.0"]
+[com.borkdal/squirrel "0.2.1"]
 ```
 
 For PostgreSQL, require the namespace
