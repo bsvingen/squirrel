@@ -222,31 +222,54 @@
                               FullJoin
                               CrossJoin]])
 
+(defn- build-cross-join
+  [join-type
+   from-items]
+  (reduce (fn [left right]
+            (spaced-str
+             left
+             (compile-sql join-type)
+             (compile-sql right)))
+          (compile-sql (first from-items))
+          (rest from-items)))
+
+(defn- build-non-cross-join
+  [join-type
+   natural
+   from-items
+   join-condition
+   join-columns]
+  (reduce (fn [left right]
+            (spaced-str
+             left
+             (compile-when-present natural)
+             (compile-sql join-type)
+             (compile-sql right)
+             (cond
+               (seq join-condition) (spaced-str
+                                     "on"
+                                     (compile-sql join-condition))
+               (seq join-columns) (spaced-str
+                                   "using"
+                                   (parenthesize
+                                    (comma-join
+                                     (compile-seq join-columns)))))))
+          (compile-sql (first from-items))
+          (rest from-items)))
+
 (def-entity [Join [[:single JoinType join-type]
                    [:single Natural natural]
                    [:ordered FromItem from-items]
                    [:single Condition join-condition]
                    [:ordered ColumnName join-columns]]]
-  (let [[first-from-item second-from-item] from-items]
-    (spaced-str
-     (compile-sql first-from-item)
-     (if (cross-join? join-type)
-       (spaced-str
-        (compile-sql join-type)
-        (compile-sql second-from-item))
-       (spaced-str
-        (compile-when-present natural)
-        (compile-sql join-type)
-        (compile-sql second-from-item)
-        (cond
-          (seq join-condition) (spaced-str
-                                "on"
-                                (compile-sql join-condition))
-          (seq join-columns) (spaced-str
-                              "using"
-                              (parenthesize
-                               (comma-join
-                                (compile-seq join-columns))))))))))
+  (if (cross-join? join-type)
+    (build-cross-join join-type
+                      from-items)
+    (build-non-cross-join join-type
+                          natural
+                          from-items
+                          join-condition
+                          join-columns)))
 
 (def-parent-entity [FromItem [TableName
                               TableExpression

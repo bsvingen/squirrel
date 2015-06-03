@@ -196,6 +196,14 @@
           (table-expression (table-name "abc"))
           (table-expression (table-name "def")))
     => (sql "abc natural join def"))
+  (fact "multiple natural join"
+    (join (inner-join)
+          (natural)
+          (table-expression (table-name "abc"))
+          (table-expression (table-name "def"))
+          (table-expression (table-name "gih"))
+          (table-expression (table-name "jkl")))
+    => (sql "abc natural join def natural join gih natural join jkl"))
   (fact "full join with columns"
     (join (full-join)
           (table-expression (table-name "abc"))
@@ -208,7 +216,13 @@
     (join (cross-join)
           (table-expression (table-name "abc"))
           (table-expression (table-name "def")))
-    => (sql "abc cross join def")))
+    => (sql "abc cross join def"))
+  (fact "multiple cross join"
+    (join (cross-join)
+          (table-expression (table-name "abc"))
+          (table-expression (table-name "def"))
+          (table-expression (table-name "ghi")))
+    => (sql "abc cross join def cross join ghi")))
 
 (facts "where"
   (fact "simple where"
@@ -507,6 +521,20 @@
                   (column-name "employee_id")))
     => (sql "select favorite_books.employee_id as employee_id, authors_and_titles, books"
             " from favorite_authors join favorite_books using (employee_id)"))
+  (fact "triple join with columns"
+    (select (column "favorite_books.employee_id"
+                    (column-alias "employee_id"))
+            (column "authors_and_titles")
+            (column "books")
+            (column "schedule")
+            (join (inner-join)
+                  (table-expression (table-name "favorite_authors"))
+                  (table-expression (table-name "favorite_books"))
+                  (table-expression (table-name "schedules"))
+                  (column-name "employee_id")))
+    => (sql "select favorite_books.employee_id as employee_id, authors_and_titles, books, schedule"
+            " from favorite_authors join favorite_books using (employee_id)"
+            " join schedules using (employee_id)"))
   (fact "natural join"
     (select (column "favorite_books.employee_id"
                     (column-alias "employee_id"))
