@@ -11,11 +11,13 @@
   nil)
 
 (def ^:const ^:private built-in-types #{java.lang.String
-                                        java.lang.Long})
+                                        java.lang.Long
+                                        java.lang.Double})
 
 (def ^:const ^:private built-in-types-check-function-names
   {java.lang.String 'string?
-   java.lang.Long 'integer?})
+   java.lang.Long 'integer?
+   java.lang.Double 'float?})
 
 (defn- is-built-in-type
   [entity]
@@ -43,6 +45,10 @@
 (defmethod record-type Long
   [_]
   :type/long)
+
+(defmethod record-type Double
+  [_]
+  :type/double)
 
 (defn- add-dispatch
   [old
@@ -106,6 +112,10 @@
   string)
 
 (defmethod compile-sql :type/long
+  [number]
+  number)
+
+(defmethod compile-sql :type/double
   [number]
   number)
 
