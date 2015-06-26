@@ -90,7 +90,7 @@
 (def-entity [Sub1 [[:single String name]]]
   name)
 
-(def-entity [Sub2 [[:single Integer count]]]
+(def-entity [Sub2 [[:single Long count]]]
   count)
 
 (def-entity [Lonely])
@@ -111,15 +111,15 @@
   (fact "top-level"
     (defs/compile-sql
       (main (sub-1 "abc")
-            (sub-2  (Integer. 7))
-            (sub-2 (Integer. 11))
-            (sub-2 (Integer. 13)))) => "combining 7, 11, 13 with abc")
+            (sub-2 7)
+            (sub-2 11)
+            (sub-2 13))) => "combining 7, 11, 13 with abc")
   (fact "failing top-level"
     (defs/compile-sql
       (main (sub-1 "abc")
             (sub-1 "def")
             (sub-1 "ghi")
-            (sub-2 (Integer. 17)))) => (throws java.lang.AssertionError)))
+            (sub-2 17))) => (throws java.lang.AssertionError)))
 
 (facts "docstrings"
   (fact "make-entity-choice-docstring"

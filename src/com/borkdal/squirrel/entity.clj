@@ -34,8 +34,9 @@
 
 (defn- get-type-check-function
   [entity]
-  (symbol
-   (str (get-name-from-entity entity) "?")))
+  (or (defs/get-built-in-type-check-function-name entity)
+      (symbol
+       (str (get-name-from-entity entity) "?"))))
 
 (defn- get-make-pre-assertion
   [[type entity name]]

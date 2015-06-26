@@ -143,7 +143,7 @@
       (comma-join
        (compile-seq parameters))))))
 
-(def-parent-entity [Expression [String LiteralString FunctionCall]])
+(def-parent-entity [Expression [String Long LiteralString FunctionCall]])
 
 (defmacro def-compare-entity [[name entity operation]]
   `(def-entity [~entity [[:ordered ~'Expression ~'expressions]]]
