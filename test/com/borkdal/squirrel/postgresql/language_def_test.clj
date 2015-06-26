@@ -664,3 +664,125 @@
               (offset "11"))
       => (sql "select c from t limit 7 offset 11"))))
 
+(facts "values"
+  (fact "simple value"
+    (value 4514 (literal-string "Dune 2") 4156 9)
+    => (sql "(4514, 'Dune 2', 4156, 9)"))
+  (fact "two values"
+    (values
+     (value 4514 (literal-string "Dune 2") 4156 9)
+     (value 4515 (literal-string "Dune 3") 4156 9))
+    => (sql "values (4514, 'Dune 2', 4156, 9), (4515, 'Dune 3', 4156, 9)")))
+
+(facts "insert"
+  (fact "returning star"
+    (returning (star))
+    => (sql "returning *"))
+  (fact "return columns"
+    (returning (column "id" (column-alias "book_id"))
+               (column "title"))
+    => (sql "returning id as book_id, title"))
+  (fact "simple insert"
+    (insert (table-name "books")
+            (column "id")
+            (column "title")
+            (column "author_id")
+            (column "subject_id")
+            (values
+             (value 4514 (literal-string "Dune 2") 4156 9)
+             (value 4515 (literal-string "Dune 3") 4156 9)))
+    => (sql "insert into books (id, title, author_id, subject_id)"
+            " values (4514, 'Dune 2', 4156, 9), (4515, 'Dune 3', 4156, 9)"))
+  (fact "insert from select"
+    (insert (table-name "books2")
+            (column "id")
+            (column "title")
+            (column "author_id")
+            (column "subject_id")
+            (select (column "id")
+                    (column "title")
+                    (column "author_id")
+                    (column "subject_id")
+                    (table-name "books")
+                    (limit 5)))
+    => (sql "insert into books2 (id, title, author_id, subject_id)"
+            " select id, title, author_id, subject_id from books limit 5"))
+  (fact "returning insert from select"
+    (insert (table-name "books2")
+            (column "id")
+            (column "title")
+            (column "author_id")
+            (column "subject_id")
+            (select (column "id")
+                    (column "title")
+                    (column "author_id")
+                    (column "subject_id")
+                    (table-name "books")
+                    (limit 5))
+            (returning (column "id" (column-alias "book_id"))
+                       (column "title")))
+    => (sql "insert into books2 (id, title, author_id, subject_id)"
+            " select id, title, author_id, subject_id from books limit 5"
+            " returning id as book_id, title"))
+  (fact "more complex insert statement"
+    (letfn [(new-data-query
+              [book-id
+               title
+               author-id
+               last-name
+               first-name]
+              (with-query
+                (with-query-name "new_data")
+                (select (star)
+                        (sub-select
+                         (values
+                          (value book-id
+                                 (literal-string title)
+                                 author-id
+                                 (literal-string last-name)
+                                 (literal-string first-name)))
+                         (name-alias "new_books")
+                         (column-alias "book_id")
+                         (column-alias "title")
+                         (column-alias "author_id")
+                         (column-alias "last_name")
+                         (column-alias "first_name")))))
+            (insert-missing-authors-query
+              []
+              (with-query
+                (with-query-name "insert_missing_authors")
+                (insert (table-name "authors")
+                        (column "id")
+                        (column "last_name")
+                        (column "first_name")
+                        (select (column "distinct author_id")
+                                (column "last_name")
+                                (column "first_name")
+                                (table-name "new_data"))
+                        (returning (column "id" (column-alias "author_id"))
+                                   (column "last_name")
+                                   (column "first_name")))))]
+      (insert (new-data-query 12345 "The SQuirreL book" 23456 "Svingen" "Boerge")
+              (insert-missing-authors-query)
+              (table-name "books")
+              (column "id")
+              (column "title")
+              (column "author_id")
+              (select (column "new_data.book_id")
+                      (column "new_data.title")
+                      (column "insert_missing_authors.author_id")
+                      (join (left-join)
+                            (table-name "new_data")
+                            (table-name "insert_missing_authors")
+                            (column-name "author_id")))))
+    => (sql "with new_data as ("
+            "select * from (values (12345, 'The SQuirreL book', 23456, 'Svingen', 'Boerge'))"
+            " as new_books (book_id, title, author_id, last_name, first_name)),"
+            " insert_missing_authors as ("
+            "insert into authors (id, last_name, first_name)"
+            " select distinct author_id, last_name, first_name"
+            " from new_data returning id as author_id, last_name, first_name)"
+            " insert into books (id, title, author_id)"
+            " select new_data.book_id, new_data.title, insert_missing_authors.author_id"
+            " from new_data left join insert_missing_authors using (author_id)")))
+

@@ -10,13 +10,24 @@
   [_]
   nil)
 
-(def ^:const ^:private built-in-types #{'java.lang.String
-                                        'java.lang.Integer})
+(def ^:const ^:private built-in-types #{java.lang.String
+                                        java.lang.Long
+                                        java.lang.Double})
+
+(def ^:const ^:private built-in-types-check-function-names
+  {java.lang.String 'string?
+   java.lang.Long 'integer?
+   java.lang.Double 'float?})
 
 (defn- is-built-in-type
   [entity]
-  (some #(isa? (resolve entity) (resolve %))
+  (some #(isa? (resolve entity) %)
         built-in-types))
+
+(defn get-built-in-type-check-function-name
+  "Return the function to use to check for a built-in entity type."
+  [entity]
+  (built-in-types-check-function-names (resolve entity)))
 
 (defn get-record-type-namespace-string
   "Returns the keyword namespace to use for the entity record type -
@@ -31,9 +42,13 @@
   [_]
   :type/string)
 
-(defmethod record-type Integer
+(defmethod record-type Long
   [_]
-  :type/integer)
+  :type/long)
+
+(defmethod record-type Double
+  [_]
+  :type/double)
 
 (defn- add-dispatch
   [old
@@ -95,4 +110,12 @@
 (defmethod compile-sql :type/string
   [string]
   string)
+
+(defmethod compile-sql :type/long
+  [number]
+  number)
+
+(defmethod compile-sql :type/double
+  [number]
+  number)
 
