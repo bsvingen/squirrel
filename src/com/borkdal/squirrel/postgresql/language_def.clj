@@ -36,21 +36,38 @@
          (comma-join
           (compile-seq column-aliases))))))))
 
+(declare-entity Expression)
+
+(def-entity [Value [[:ordered Expression expressions]]]
+  (parenthesize
+   (comma-join
+    (compile-seq expressions))))
+
+(def-entity [Values [[:ordered Value values]]]
+  (spaced-str
+   "values"
+   (comma-join
+    (compile-seq values))))
+
 (declare-entity Condition)
 (declare-entity FromItem)
 (declare-entity Select)
+(declare-entity Insert)
 
 (def-entity [Lateral]
   "lateral")
 
 (def-entity [SubSelect [[:single Lateral lateral]
                         [:single Select select]
+                        [:single Values values]
                         [:single NameAlias alias]
                         [:ordered ColumnAlias column-aliases]]]
   (spaced-str
    (compile-when-present lateral)
    (parenthesize
-    (compile-sql select))
+    (cond
+      select (compile-sql select)
+      values (compile-sql values)))
    "as"
    (compile-sql alias)
    (when (seq column-aliases)
@@ -64,7 +81,8 @@
 
 (def-entity [WithQuery [[:single WithQueryName with-query-name]
                         [:ordered ColumnName column-names]
-                        [:single Select with-select]]]
+                        [:single Select with-select]
+                        [:single Insert with-insert]]]
   (spaced-str
    (compile-sql with-query-name)
    (when (seq column-names)
@@ -73,7 +91,9 @@
        (compile-seq column-names))))
    "as"
    (parenthesize
-    (compile-sql with-select))))
+    (cond
+      with-select (compile-sql with-select)
+      with-insert (compile-sql with-insert)))))
 
 (def-entity [WithSelect [[:single WithQueryName with-query-name]
                          [:single NameAlias alias]
@@ -129,8 +149,6 @@
   (str "'"
        (compile-sql expression)
        "'"))
-
-(declare-entity Expression)
 
 (def-entity [FunctionCall [[:single FunctionName function-name]
                            [:ordered Expression parameters]
@@ -495,4 +513,38 @@
        (compile-seq order-by))))
    (compile-when-present limit)
    (compile-when-present offset)))
+
+(def-entity [Returning [[:single Star star]
+                        [:ordered Column columns]]]
+  (spaced-str
+   "returning"
+   (if star
+     (compile-sql star)
+     (comma-join
+      (compile-seq columns)))))
+
+(def-entity [Insert [[:single RecursiveWith recursive-with]
+                     [:ordered WithQuery with-queries]
+                     [:single TableName table-name]
+                     [:ordered Column columns]
+                     [:single Values values]
+                     [:single Select select]
+                     [:single Returning returning]]]
+  (spaced-str
+   (when (seq with-queries)
+     (spaced-str
+      "with"
+      (compile-when-present recursive-with)
+      (comma-join
+       (compile-seq with-queries))))
+   "insert into"
+   (compile-sql table-name)
+   (when (seq columns)
+     (parenthesize
+      (comma-join
+       (compile-seq columns))))
+   (cond
+     values (compile-sql values)
+     select (compile-sql select))
+   (compile-when-present returning)))
 
