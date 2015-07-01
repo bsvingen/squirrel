@@ -3,7 +3,7 @@
   :url "https://github.com/bsvingen/squirrel"
   :license {:name "Apache License 2.0"
             :url "http://www.apache.org/licenses/LICENSE-2.0"}
-  :dependencies [[org.clojure/clojure "1.6.0"]
+  :dependencies [[org.clojure/clojure "1.7.0"]
                  [potemkin "0.3.7"]
                  [org.tobereplaced/lettercase "1.0.0"]
                  [com.borkdal/clojure.utils "0.1.1"]]
