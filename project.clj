@@ -13,7 +13,6 @@
                                   [org.clojars.trptcolin/sjacket "0.1.0.6"
                                    :exclusions [org.clojure/clojure]]]
                    :plugins [[lein-midje "3.1.3"]]}}
-  :jvm-opts ["-Xmx1G"]
   :plugins [[codox "0.8.10" :exclusions [org.clojure/clojure]]
             [midje-readme "1.0.7"]]
   :codox {:defaults {:doc/format :markdown}}
