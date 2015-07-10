@@ -1,4 +1,5 @@
 (ns com.borkdal.squirrel.postgresql
+  (:refer-clojure :exclude [distinct distinct?])
   (:require [potemkin]
             [com.borkdal.squirrel.postgresql.language-def :as language-def]))
 

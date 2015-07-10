@@ -1,4 +1,5 @@
 (ns com.borkdal.squirrel.postgresql.language-def-test
+  (:refer-clojure :exclude [distinct distinct?])
   (:require [midje.sweet :refer :all]
             [com.borkdal.squirrel.midje-utils :refer [sql]]
             [com.borkdal.squirrel.definitions :as defs]
@@ -410,6 +411,12 @@
              (column "c2")
              (column "c3")])
     => (sql "select c1, c2, c3 from t"))
+  (fact "distinct"
+    (select (distinct)
+            (column "c")
+            (column "d")
+            (table-name "t"))
+    => (sql "select distinct c, d from t"))
   (fact "no with"
     (select (column "x")
             (column "y")

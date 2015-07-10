@@ -1,4 +1,5 @@
 (ns com.borkdal.squirrel.postgresql.language-def
+  (:refer-clojure :exclude [distinct distinct?])
   (:require [clojure.string :as string]
             [com.borkdal.squirrel.definitions :refer [compile-sql]]
             [com.borkdal.squirrel.entity :refer [def-entity
@@ -454,7 +455,11 @@
    "offset"
    (compile-sql start)))
 
+(def-entity [Distinct]
+  "distinct")
+
 (def-entity [Select [[:single RecursiveWith recursive-with]
+                     [:single Distinct distinct]
                      [:single Star star]
                      [:ordered Column columns]
                      [:ordered WithQuery with-queries]
@@ -475,6 +480,7 @@
       (comma-join
        (compile-seq with-queries))))
    "select"
+   (compile-when-present distinct)
    (cond
      star (compile-sql star)
      (seq columns) (comma-join

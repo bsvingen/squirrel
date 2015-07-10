@@ -14,6 +14,7 @@
                                    :exclusions [org.clojure/clojure]]]
                    :plugins [[lein-midje "3.1.3"]]}}
   :plugins [[codox "0.8.10" :exclusions [org.clojure/clojure]]
-            [midje-readme "1.0.7"]]
+            [midje-readme "1.0.8"]]
   :codox {:defaults {:doc/format :markdown}}
-  :midje-readme {:require "[com.borkdal.squirrel.postgresql :refer :all]"})
+  :midje-readme {:require "[com.borkdal.squirrel.postgresql :refer :all]"
+                 :refer-clojure ":exclude [distinct distinct?]"})
