@@ -1,5 +1,5 @@
 (ns com.borkdal.squirrel.postgresql.language-def
-  (:refer-clojure :exclude [distinct distinct?])
+  (:refer-clojure :exclude [distinct distinct? into])
   (:require [clojure.string :as string]
             [com.borkdal.squirrel.definitions :refer [compile-sql]]
             [com.borkdal.squirrel.entity :refer [def-entity
@@ -458,6 +458,11 @@
 (def-entity [Distinct]
   "distinct")
 
+(def-entity [Into [[:single TableName table]]]
+  (spaced-str
+   "into"
+   (compile-sql table)))
+
 (def-entity [Select [[:single RecursiveWith recursive-with]
                      [:single Distinct distinct]
                      [:single Star star]
@@ -471,7 +476,8 @@
                      [:single SetOperation set-operation]
                      [:ordered OrderBy order-by]
                      [:single Limit limit]
-                     [:single Offset offset]]]
+                     [:single Offset offset]
+                     [:single Into into]]]
   (spaced-str
    (when (seq with-queries)
      (spaced-str
@@ -485,6 +491,8 @@
      star (compile-sql star)
      (seq columns) (comma-join
                     (compile-seq columns)))
+   (when into
+     (compile-sql into))
    "from"
    (comma-join
     (compile-seq from-items))

@@ -1,5 +1,5 @@
 (ns com.borkdal.squirrel.postgresql.language-def-test
-  (:refer-clojure :exclude [distinct distinct?])
+  (:refer-clojure :exclude [distinct distinct? into])
   (:require [midje.sweet :refer :all]
             [com.borkdal.squirrel.midje-utils :refer [sql]]
             [com.borkdal.squirrel.definitions :as defs]
@@ -388,6 +388,10 @@
     (offset "7")
     => (sql "offset 7")))
 
+(fact "into"
+  (into (table-name "t"))
+  => (sql "into t"))
+
 (facts "full select"
   (fact "basic"
     (select (column "c")
@@ -669,7 +673,17 @@
               (table-name "t")
               (limit "7")
               (offset "11"))
-      => (sql "select c from t limit 7 offset 11"))))
+      => (sql "select c from t limit 7 offset 11")))
+  (fact "into"
+    (defs/compile-sql
+      (defs/add
+        (select (into
+                 (table-name "dest"))
+                (table-expression
+                 (table-name "source")))
+        [(column "c1")
+         (column "c2")]))
+    => (str "select c1, c2 into dest from source")))
 
 (facts "values"
   (fact "simple value"
