@@ -17,4 +17,4 @@
             [midje-readme "1.0.8"]]
   :codox {:defaults {:doc/format :markdown}}
   :midje-readme {:require "[com.borkdal.squirrel.postgresql :refer :all]"
-                 :refer-clojure ":exclude [distinct distinct?]"})
+                 :refer-clojure ":exclude [distinct distinct? into]"})
