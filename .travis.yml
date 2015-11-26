@@ -1,2 +1,3 @@
 language: clojure
-script: lein midje
+install: yes | sudo lein upgrade
+script: printf "\n" | sudo lein midje
